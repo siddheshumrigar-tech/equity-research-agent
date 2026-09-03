@@ -8,7 +8,7 @@
 [![Report](https://img.shields.io/badge/ReportLab-16--Page%20Vector%20PDF-C70039.svg)]()
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/siddheshumrigar-tech/equity-research-agent/blob/main/notebooks/quickstart_colab.ipynb)
 
-An autonomous financial modeling and algorithmic valuation engine. Ingests live exchange market data, computes comprehensive 3-statement financial models, performs multi-method valuation (10-Year DCF, Relative P/E, Reverse DCF), generates high-resolution Matplotlib charts from authentic price history, and compiles:
+An autonomous financial modeling and algorithmic valuation engine. Ingests live exchange market data, computes comprehensive 3-statement financial models, performs multi-method valuation (5-Year Explicit DCF + Gordon Growth, Relative P/E, Reverse DCF), generates high-resolution Matplotlib charts from authentic price history, and compiles:
 
 1. **A 16-Page Publication-Grade PDF Valuation Deck** with executive chapter layouts, WACC sensitivity matrices, and DuPont ROE trees.
 2. **A 10-Tab Executive Interactive Financial Model (`.xlsx`)** with dynamic Excel scenario dropdowns, balance sheet audit checks, and native openpyxl charts.

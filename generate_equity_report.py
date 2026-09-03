@@ -2595,7 +2595,11 @@ def fetch_real_historical_performance(t_obj, ticker: str, currency: str):
 # DYNAMIC VALUATION & FUNDAMENTAL RATING ENGINE
 # ─────────────────────────────────────────────────────────────────────────────
 def calculate_institutional_valuation(data: dict, sector_info: dict, memory=None, t_obj=None) -> dict:
-    """Computes mathematically rigorous DCF, Relative P/E, Reverse DCF, and Dynamic Rating."""
+    """
+    Computes mathematically rigorous 5-Year Explicit DCF + Gordon Growth Terminal Value,
+    Relative P/E, Reverse DCF Implied Growth, and Dynamic Fundamental Rating.
+    Pulls actual balance sheet cash & debt, live operating margins, and historical growth.
+    """
     cmp = float(data.get("cmp", 1000.0))
     mcap = float(data.get("mcap_cr", cmp * 50.0))
     shares = max(0.01, round(mcap / cmp, 2))
@@ -2603,19 +2607,20 @@ def calculate_institutional_valuation(data: dict, sector_info: dict, memory=None
     sec_type = sector_info.get("type", "Diversified")
     ticker = data.get("ticker", "EQUITY")
     
-    # 1. Macro Benchmarks (CAPM)
-    if currency == "USD":
-        rf = 0.0425   # US 10Y Treasury
-        erp = 0.0500  # Mature Equity Risk Premium
-        tax_rate = 0.21
-        terminal_g = 0.025
-    else:
-        rf = 0.0705   # India 10Y G-Sec Yield
-        erp = 0.0550  # India ERP
-        tax_rate = 0.2517
-        terminal_g = 0.045
-        
-    # Check continuous learning memory overrides
+    # 1. Multi-Currency Macro Matrix
+    macro_matrix = {
+        "USD": {"rf": 0.0425, "erp": 0.0500, "tax": 0.2100, "g": 0.025},
+        "INR": {"rf": 0.0705, "erp": 0.0550, "tax": 0.2517, "g": 0.045},
+        "EUR": {"rf": 0.0245, "erp": 0.0500, "tax": 0.2500, "g": 0.020},
+        "GBP": {"rf": 0.0415, "erp": 0.0500, "tax": 0.2500, "g": 0.022},
+    }
+    macro = macro_matrix.get(currency, {"rf": 0.0500, "erp": 0.0550, "tax": 0.2500, "g": 0.030})
+    rf = macro["rf"]
+    erp = macro["erp"]
+    tax_rate = macro["tax"]
+    terminal_g = macro["g"]
+    
+    # Continuous learning memory overrides
     if memory:
         pref_g = memory.get_preference("terminal_growth_g")
         if pref_g:
@@ -2624,19 +2629,22 @@ def calculate_institutional_valuation(data: dict, sector_info: dict, memory=None
         if sec_ovr and "rf" in sec_ovr:
             rf = float(sec_ovr["rf"])
             
-    # Live Beta derivation
-    beta = 1.00
+    # 2. Live Beta Derivation with Proper Sentinel (Fixes 1.00 sentinel collision bug)
+    beta = None
     if t_obj is not None:
         try:
             fi = getattr(t_obj, "info", {})
             b_val = fi.get("beta")
-            if b_val and 0.25 <= float(b_val) <= 2.8:
+            if b_val is not None and 0.10 <= float(b_val) <= 3.5:
                 beta = float(b_val)
         except Exception:
             pass
             
-    if beta == 1.00:
-        sector_betas = {"IT_SERVICES": 0.85, "ERD_TECH": 0.95, "BANKING": 1.15, "FMCG": 0.65, "AUTO": 1.20, "RETAIL_LIFESTYLE": 1.05}
+    if beta is None:
+        sector_betas = {
+            "IT_SERVICES": 0.85, "ERD_TECH": 0.95, "BANKING": 1.15,
+            "FMCG": 0.65, "AUTO": 1.20, "RETAIL_LIFESTYLE": 1.05
+        }
         beta = sector_betas.get(sec_type, 1.00)
         
     if memory:
@@ -2648,39 +2656,59 @@ def calculate_institutional_valuation(data: dict, sector_info: dict, memory=None
     kd_pre = rf + 0.015
     kd_post = kd_pre * (1.0 - tax_rate)
     
-    # Capital Structure & Margins
+    # 3. Capital Structure & Operating Margins (Actuals with Sector Fallback)
+    fi = getattr(t_obj, "info", {}) if t_obj is not None else {}
+    actual_margin = fi.get("operatingMargins")
+    if actual_margin is not None and 0.01 <= float(actual_margin) <= 0.80:
+        ebit_margin = float(actual_margin)
+    else:
+        sector_margins = {
+            "IT_SERVICES": 0.245, "ERD_TECH": 0.220, "BANKING": 0.320,
+            "FMCG": 0.220, "AUTO": 0.115, "RETAIL_LIFESTYLE": 0.140
+        }
+        ebit_margin = sector_margins.get(sec_type, 0.160)
+        
+    # Capital Structure Weightings
     if sec_type in ["IT_SERVICES", "ERD_TECH"]:
         we, wd = 0.95, 0.05
-        ebit_margin = 0.245
         reinvest_rate = 0.15
         pe_target = 26.0
     elif sec_type == "BANKING":
         we, wd = 0.85, 0.15
-        ebit_margin = 0.320
         reinvest_rate = 0.25
         pe_target = 18.0
     elif sec_type == "FMCG":
         we, wd = 0.90, 0.10
-        ebit_margin = 0.220
         reinvest_rate = 0.20
         pe_target = 38.0
     elif sec_type == "AUTO":
         we, wd = 0.75, 0.25
-        ebit_margin = 0.115
         reinvest_rate = 0.35
         pe_target = 19.0
     else:
         we, wd = 0.80, 0.20
-        ebit_margin = 0.160
         reinvest_rate = 0.25
         pe_target = 22.0
         
     wacc = (we * ke) + (wd * kd_post)
     
-    # 2. Explicit 5-Year DCF Cash Flow Projections
-    rev_base = float(data.get("revenue_cr") or (mcap / 2.5))
-    growth_rates = [0.12, 0.11, 0.10, 0.09, 0.08]
+    # 4. Actual Revenue Growth Profile
+    actual_growth = fi.get("revenueGrowth")
+    if actual_growth is not None and -0.15 <= float(actual_growth) <= 0.50:
+        g1 = max(0.04, float(actual_growth))
+    else:
+        g1 = 0.12
+    # Realistic 5-year glide path from actual growth toward terminal growth
+    growth_rates = [
+        round(g1, 3),
+        round(g1 * 0.90, 3),
+        round(g1 * 0.82, 3),
+        round(g1 * 0.75, 3),
+        round(max(terminal_g + 0.02, g1 * 0.68), 3)
+    ]
     
+    # 5. Explicit 5-Year DCF Cash Flow Projections
+    rev_base = float(data.get("revenue_cr") or (mcap / 2.5))
     pv_explicit_fcff = 0.0
     last_fcff = 0.0
     current_rev = rev_base
@@ -2693,25 +2721,37 @@ def calculate_institutional_valuation(data: dict, sector_info: dict, memory=None
         pv_explicit_fcff += fcff * discount_factor
         last_fcff = fcff
         
-    # 3. Terminal Value (Gordon Growth Perpetuity)
+    # 6. Terminal Value (Gordon Growth Perpetuity)
     tv_gordon = (last_fcff * (1.0 + terminal_g)) / max(0.015, (wacc - terminal_g))
     pv_tv = tv_gordon / ((1.0 + wacc) ** len(growth_rates))
-    
     enterprise_value = pv_explicit_fcff + pv_tv
-    cash_val = rev_base * 0.12
-    debt_val = rev_base * 0.06
-    equity_value = enterprise_value + cash_val - debt_val
+    
+    # 7. Actual Balance Sheet Cash & Debt (Eliminates fabricated 12% & 6% ratios)
+    actual_cash_raw = fi.get("totalCash")
+    actual_debt_raw = fi.get("totalDebt")
+    
+    if actual_cash_raw is not None and float(actual_cash_raw) > 0:
+        cash_val = round(float(actual_cash_raw) / 1e7, 1)
+    else:
+        cash_val = round(rev_base * 0.08, 1)
+        
+    if actual_debt_raw is not None and float(actual_debt_raw) >= 0:
+        debt_val = round(float(actual_debt_raw) / 1e7, 1)
+    else:
+        debt_val = round(rev_base * 0.08, 1)
+        
+    equity_value = max(100.0, enterprise_value + cash_val - debt_val)
     dcf_fair_value = max(1.0, round(equity_value / shares, 2))
     
-    # 4. Relative Valuation (P/E Multiple)
+    # 8. Relative Valuation (P/E Multiple)
     ntm_pat = rev_base * (1.0 + growth_rates[0]) * ebit_margin * (1.0 - tax_rate)
     ntm_eps = max(0.01, ntm_pat / shares)
     pe_fair_value = round(ntm_eps * pe_target, 2)
     
-    # 5. Reverse DCF Implied Growth Rate
+    # 9. Reverse DCF Implied Growth Rate
     implied_cagr = round((((cmp / dcf_fair_value) ** 0.2) * (1.0 + growth_rates[0]) - 1.0) * 100.0, 1)
     
-    # 6. Triangulated Fair Value & Dynamic Verdict Engine
+    # 10. Triangulated Fair Value & Dynamic Verdict Engine
     target_price = round((0.70 * dcf_fair_value) + (0.30 * pe_fair_value), 2)
     upside_pct = round(((target_price - cmp) / cmp) * 100.0, 1)
     
@@ -2729,6 +2769,27 @@ def calculate_institutional_valuation(data: dict, sector_info: dict, memory=None
     sign = "+" if upside_pct >= 0 else ""
     margin_of_safety = f"{sign}{upside_pct:.1f}%"
     
+    # 11. Fact-Based Dynamic Investment Thesis (No boilerplate for losers)
+    if verdict in ["STRONG ACCUMULATE", "ACCUMULATE"]:
+        thesis_text = (
+            f"{ticker} displays robust fundamental cash flow economics with an operating margin of "
+            f"{ebit_margin*100:.1f}% and revenue growth of {growth_rates[0]*100:.1f}%. "
+            f"Trading at {margin_of_safety} margin of safety relative to our explicit 5-year DCF fair value "
+            f"of {currency} {dcf_fair_value:,.2f}."
+        )
+    elif verdict == "NEUTRAL / HOLD":
+        thesis_text = (
+            f"{ticker} is currently fair-valued by the market, with CMP of {currency} {cmp:,.2f} closely reflecting "
+            f"underlying cash generation (DCF fair value: {currency} {dcf_fair_value:,.2f}). "
+            f"Risk-reward is balanced across the 12-month research horizon."
+        )
+    else:
+        thesis_text = (
+            f"{ticker} trades at a stretched valuation relative to projected fundamental cash flows, offering a "
+            f"negative margin of safety ({margin_of_safety}). At CMP of {currency} {cmp:,.2f}, the stock reflects "
+            f"an implied growth expectation of {implied_cagr:.1f}% CAGR, warranting a cautious {verdict} stance."
+        )
+        
     return {
         "beta": round(beta, 2),
         "rf": round(rf * 100.0, 2),
@@ -2737,12 +2798,17 @@ def calculate_institutional_valuation(data: dict, sector_info: dict, memory=None
         "kd": round(kd_pre * 100.0, 2),
         "wacc": round(wacc * 100.0, 2),
         "terminal_g": round(terminal_g * 100.0, 2),
+        "ebit_margin": round(ebit_margin * 100.0, 1),
+        "growth_rates": growth_rates,
+        "cash_val": cash_val,
+        "debt_val": debt_val,
         "dcf_fair_value": dcf_fair_value,
         "pe_fair_value": pe_fair_value,
         "reverse_dcf_cagr": implied_cagr,
         "target_price": target_price,
         "verdict": verdict,
         "margin_of_safety": margin_of_safety,
+        "thesis": thesis_text,
         "shares": shares,
         "pe_target": pe_target
     }
@@ -3730,7 +3796,7 @@ def main():
         "currency": currency,
         "t_obj": t_obj,
         "sector_info": sector_info,
-        "thesis_long": f"{company_name} ({clean_sym}) is an established compounder in the {resolved_sector} sector with sustained return ratios and defensible competitive advantages."
+        "thesis_long": val_res["thesis"]
     }
 
     print(f"🚀 Generating Tier-1 Institutional Package for {clean_sym} (Verdict: {val_res['verdict']} | Margin of Safety: {val_res['margin_of_safety']})...")
