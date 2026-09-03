@@ -1632,7 +1632,7 @@ def generate_corporate_excel_model(data: dict, output_path: str, sector_info: di
         ("💵 7. Cash Flow Statement & Financing", "Cash Flow", "A1", "CFO, CFI, CFF, Closing Cash and automated cash deficit financing loop"),
         ("🏛️ 8. Balance Sheet & 0-Check", "Balance Sheet", "A1", "Articulated Assets, Ind AS 116 Leases, Liabilities & Equity with =0.00 audit verifier"),
         ("🧮 9. CAPM & WACC Build-up", "CAPM & WACC", "A1", "10-Yr G-Sec Rf, Statistical Beta regression, ERP, Cost of Equity & dynamic WACC"),
-        ("💎 10. 10-Yr DCF & 2-Way Sensitivity", "DCF Valuation", "A1", "Mid-Year Discounting FCFF, Gordon Growth + Exit Multiple & 5x6 Sensitivity Matrix")
+        ("💎 10. 5-Yr DCF & 2-Way Sensitivity", "DCF Valuation", "A1", "Mid-Year Discounting FCFF, Gordon Growth + Exit Multiple & 5x6 Sensitivity Matrix")
     ]
     
     ws_cover.cell(7, 2, "Tab Name / Section").fill = navy_fill
@@ -2953,7 +2953,7 @@ def generate_all_charts(data: dict, sector_info: dict, output_dir="/tmp/institut
 
     # 7. Valuation Football Field
     fig, ax = plt.subplots(figsize=(6.5, 2.5), dpi=200)
-    methods = ["52-Week Range", "P/E Multiple", "EV/EBITDA", "10-Yr DCF", "SOTP Intrinsic"]
+    methods = ["52-Week Range", "P/E Multiple", "EV/EBITDA", "5-Yr DCF", "SOTP Intrinsic"]
     lows = [cmp * 0.82, cmp * 0.95, cmp * 0.98, cmp * 1.05, cmp * 1.10]
     highs = [cmp * 1.18, cmp * 1.25, cmp * 1.28, cmp * 1.35, target * 1.08]
     widths = [h - l for h, l in zip(highs, lows)]
@@ -3453,7 +3453,7 @@ def generate_institutional_25p_pdf(data: dict, output_path: str):
     # ═════════════════════════════════════════════════════════════════════════
     # PAGE 14: 10-YEAR DCF & SENSITIVITY MATRIX
     # ═════════════════════════════════════════════════════════════════════════
-    story.append(Paragraph("13. 10-Year DCF, Reverse DCF & Sensitivity Matrix", h1_style))
+    story.append(Paragraph("13. 5-Year Explicit DCF, Reverse DCF & Sensitivity Matrix", h1_style))
     story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
     story.append(p(f"<b>10-Year Explicit DCF Valuation Model:</b> Our DCF model applies mid-year discounting to Unlevered Free Cash Flows (FCFF) under a CAPM-derived WACC of 11.20% and a perpetual terminal growth rate of 5.0%:"))
 
@@ -3854,7 +3854,7 @@ def main():
 
     dcf_diff = ((val_res['dcf_fair_value'] - cmp_val) / cmp_val) * 100.0
     pe_diff = ((val_res['pe_fair_value'] - cmp_val) / cmp_val) * 100.0
-    val_line1 = f"• 10-Yr DCF (Mid-Year): {currency} {val_res['dcf_fair_value']:,.2f} ({dcf_diff:+.1f}%)"
+    val_line1 = f"• 5-Yr Explicit DCF (Mid-Year): {currency} {val_res['dcf_fair_value']:,.2f} ({dcf_diff:+.1f}%)"
     val_line2 = f"• Reverse DCF Implied Growth: {val_res['reverse_dcf_cagr']:.1f}% CAGR"
     val_line3 = f"• Forward P/E Multiple: {currency} {val_res['pe_fair_value']:,.2f} ({pe_diff:+.1f}%)"
     delivery_line = f"📩 *Package dispatched to:* {args.email}" if args.email else f"📁 *Artifacts saved in:* `{output_dir}`"
