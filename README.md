@@ -11,47 +11,67 @@ An autonomous, production-grade financial valuation and equity research agent. A
 
 ---
 
+## 🤖 4-Agent Parallel Orchestration Pipeline
+
+Whenever a research job is triggered, the system coordinates four specialized sub-agent roles:
+
+```
+                      ┌────────────────────────────────────────┐
+                      │            ORCHESTRATOR                │
+                      │      (Master Task Coordinator)         │
+                      └──────────────────┬─────────────────────┘
+                                         │
+       ┌──────────────────┬──────────────┴─────┬──────────────────┐
+       ▼                  ▼                    ▼                  ▼
+┌──────────────┐   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│   AGENT 1:   │   │   AGENT 2:   │    │   AGENT 3:   │    │   AGENT 4:   │
+│  Live Market │   │ Dynamic P&L  │    │ 16-Page PDF  │    │  Reviewer &  │
+│  Data Scout  │   │  & Financial │    │ Vector Chart │    │ Multi-Channel│
+│ (Scrapes NSE │   │Model Builder │    │ Engine (7 HD │    │  Dispatcher  │
+│  & yfinance) │   │ (Tesla-Style)│    │  Matplotlib) │    │(Email+WA Bot)│
+└──────────────┘   └──────────────┘    └──────────────┘    └──────────────┘
+```
+
+1. **Live Market Data Scout:** Extracts real-time NSE closing ticks, CMP, 52-week High/Low, Market Capitalization, Shares Outstanding, Trailing P/E, and Audited Annual Turnover.
+2. **Dynamic Financial Modeler:** Resolves Sector DNA, compiles the 10-tab articulated model, applies OpenXML `<c:manualLayout>` injections, and formats numbers strictly to standard OpenXML specifications (zero Excel repair warnings).
+3. **Publication-Grade PDF Compiler:** Produces 7 vector charts and assembles a 16-page ReportLab initiation report with dynamic headers and zero font rendering glitches.
+4. **QA & Multi-Channel Dispatcher:** Verifies Balance Sheet zero-audit checks (`Assets - (Liabilities + Equity) = 0.00`), builds mobile executive digests, and triggers SMTP delivery.
+
+---
+
+## 🧠 Continuous Learning Loop (`memory/`)
+
+The agent includes an autonomous, persistent learning system that starts completely clean from **0 (tabula rasa)**:
+
+- **`memory/learnings.json`**: A local, persistent JSON memory bank. Automatically persists sector-specific accounting rules, custom working capital baselines, and past research history across runs.
+- **`memory/memory_manager.py`**: Built-in memory manager that reads historical calibrations before generating models and logs completed runs.
+- **Teaching the Agent via CLI**:
+  ```bash
+  python generate_equity_report.py --ticker TCS.NS --learn "sector:IT:dio=0"
+  ```
+
+---
+
 ## 🏗️ Dual-Engine Sector Architecture
 
 The agent automatically resolves the target company's business archetype:
 
-### 1. Banking & BFSI Valuation Suite
-*Designed for Commercial Banks, NBFCs, and Financial Institutions (e.g. HDFC Bank, ICICI Bank, SBI, Kotak, Axis, Bajaj Finance).*
+### 1. IT Services & Digital Tech Suite (e.g. TCS, Infosys, HCL Tech, Wipro)
+- **Zero Physical Inventory**: Working capital correctly sets `Inventory Days (DIO)` to `0.0 Days (N/A - Services)` and models `Unbilled Revenue Days` (~28 days).
+- **Service P&L Cost Breakdown**: Replaces material COGS with `Employee Benefit Expenses (Personnel)` (~56% of revenue) and `Subcontracting & SG&A Overheads` (~20%).
+- **Asset-Light DuPont ROE**: Reflects authentic tech capital efficiency (~45%–50% ROE) driven by zero debt, high asset turnover, and high dividend payouts.
+
+### 2. Corporate, Industrials & Consumer DCF Suite (e.g. Reliance, Titan, ITC, Tata Motors)
+- **3-Statement Articulated Model**: Articulated 8-year Income Statement, Balance Sheet, and Cash Flow Statement with automated balance checks.
+- **Fixed Asset & PP&E Schedule**: Capex roll-forward, gross block, and depreciation engine.
+- **Working Capital & Cash Conversion Cycle (CCC)**: DSO, DIO, DPO days driving trade cycle.
+- **Valuation Engines**: 10-Year Explicit Unlevered Discounted Cash Flow (DCF), Reverse DCF Implied Expectations, Sum-of-the-Parts (SOTP) Valuation, and 5-Method Football Field Matrix.
+
+### 3. Banking & BFSI Valuation Suite (e.g. HDFC Bank, ICICI Bank, SBI, Kotak)
 - **Loan Portfolio Roll-Forward**: Retail, Wholesale, SME, Agriculture breakdown.
 - **NII & NIM Margin Engine**: Net Interest Income, Yield on Advances, Cost of Funds.
 - **Asset Quality (NPA) Module**: Gross NPA %, Net NPA %, Provision Coverage Ratio (PCR).
-- **Capital Adequacy**: Tier-1 CRAR capital roll-forward and DuPont ROE decomposition.
 - **Valuation Engines**: 5-Year Explicit Dividend Discount Model (DDM) & Justified Price-to-Book (P/BV) 2-Way Sensitivity Matrix.
-
-### 2. Corporate & Industrials DCF Suite
-*Designed for Non-Financial Corporates (e.g. Reliance Industries, Titan, ITC, TCS, Tata Motors, Sun Pharma).*
-- **3-Statement Articulated Model**: Articulated 8-year Income Statement, Balance Sheet, and Cash Flow Statement with automated balance checks.
-- **Fixed Asset & PP&E Schedule**: Capex roll-forward, gross block, and depreciation engine.
-- **Working Capital & Cash Conversion Cycle (CCC)**: DSO, DIO, DPO days.
-- **Valuation Engines**: 10-Year Explicit Unlevered Discounted Cash Flow (DCF), Reverse DCF Implied Expectations, Sum-of-the-Parts (SOTP) Valuation, and 5-Method Football Field Matrix.
-
----
-
-## 📑 16-Page Master Institutional PDF Report Layout
-
-Every report is compiled with high text density, structured financial tables, zero wasted whitespace, running headers, and `Page X of 16` footers:
-
-- **Page 1**: Cover & Institutional Executive Dashboard (CMP, Target Price, MOS %, 1-Yr Stock vs. NIFTY 50 Chart).
-- **Page 2**: Executive Summary & Core Investment Thesis (3 Strategic Pillars & Catalyst Matrix Table).
-- **Page 3**: Corporate Architecture, Business Flywheel & Strategic Milestone Timeline.
-- **Page 4**: Segment Deep-Dive #1: Primary Technology/Digital Services (Jio Subscriber & ARPU Curve Chart).
-- **Page 5**: Segment Deep-Dive #2: Consumer & Retail Footprint (Segment EBITDA Donut Chart).
-- **Page 6**: Segment Deep-Dive #3: Core Industrial / Petrochemical Operations (Revenue & EBITDA Trajectory Chart).
-- **Page 7**: Segment Deep-Dive #4: Future Growth Engines & Cleantech Gigafactories.
-- **Page 8**: Competitive Moats & Porter's Five Forces Deep-Dive Matrix.
-- **Page 9**: Macro Landscape, Demographic Inflection & Government PLI Incentive Schemes.
-- **Page 10**: 5-Year Historical & Projected Common-Size Financial Statements.
-- **Page 11**: DuPont 5-Stage ROE Decomposition & Capital Efficiency (DuPont Driver Chart).
-- **Page 12**: Working Capital, Cash Conversion Cycle & Capex Peak vs. Free Cash Flow Inflection Chart.
-- **Page 13**: Sum-of-the-Parts (SOTP) Valuation & Multi-Model Football Field Chart.
-- **Page 14**: 10-Year Explicit DCF, Reverse DCF Expectations & 2-Way WACC vs. Growth Sensitivity Matrix.
-- **Page 15**: Risk Governance Matrix, Bear/Base/Bull Scenarios & Staggered Accumulation Tranches.
-- **Page 16**: Floor Trader Technical Pivot Filters (R2, R1, P, S1, S2) & SEBI Statutory Disclosures.
 
 ---
 
@@ -63,7 +83,7 @@ The generated Excel workbook is modeled directly after executive institutional m
   - **Cell `E6`**: Interactive Excel Data Validation Dropdown (`"FY23 (A), FY24 (A), FY25 (A), FY26E, FY27E, FY28E, FY29E, FY30E"`).
   - **Top 7 KPI Stat Cards**: Revenue, COGS, OPEX, Gross Profit, Net Profit, ROA %, and ROE % with active `% VS Pre Year` growth badges.
   - **6 Embedded Visual Charts**: All charts dynamically re-orient when the `E6` dropdown year changes.
-- **`Dashboard_Engine` Tab**: Underlying index-match lookup formulas dynamically powering cards and charts without VBA or external macros.
+- **OpenXML Compliance**: Clean numeric formatting (`#,##0`, `#,##0.0`, `#,##0.00`, `0.0%`, `0.0000`). Zero unquoted strings in `styles.xml`, guaranteeing **zero recovery or corruption popups**.
 - **Full Statement Tabs**: Cover Page, Drivers, Segment Breakdown, Income Statement, PP&E Schedule, Working Capital, Cash Flow, Balance Sheet, CAPM & WACC, DCF Valuation.
 
 ---
@@ -83,11 +103,14 @@ pip install -r requirements.txt
 
 ### 3. Generate Complete Institutional Package
 ```bash
-python generate_equity_report.py --ticker RELIANCE.NS --name "Reliance Industries Limited" --cmp 1302.50 --sector Energy
+# Research an IT Services Company (e.g. TCS)
+python generate_equity_report.py --ticker TCS.NS --name "Tata Consultancy Services Limited" --sector IT_SERVICES
+
+# Research a Conglomerate (e.g. Reliance)
+python generate_equity_report.py --ticker RELIANCE.NS --name "Reliance Industries Limited" --sector Energy
 ```
 
 ### 4. Optional Email Dispatch
-To automatically dispatch the output `.xlsx` and `.pdf` to your email:
 ```bash
 python generate_equity_report.py --ticker RELIANCE.NS --email your-email@example.com
 ```

@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "description": "Autonomous learning bank for Equity Research Agent. Stores persistent sector nuances, model calibrations, and preferences across runs.",
+  "sector_overrides": {},
+  "ticker_calibrations": {},
+  "user_preferences": {
+    "default_currency": "INR",
+    "wacc_baseline_rf": 0.071,
+    "terminal_growth_g": 0.05,
+    "preferred_model": "Tesla-Executive-10Tab"
+  },
+  "research_history": []
+}

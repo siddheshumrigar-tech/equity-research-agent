@@ -1,3 +1,12 @@
+import sys
+try:
+    from memory.memory_manager import AgentMemoryManager
+except ImportError:
+    try:
+        from memory_manager import AgentMemoryManager
+    except ImportError:
+        AgentMemoryManager = None
+
 from openpyxl.chart.label import DataLabelList
 from openpyxl.chart.series import DataPoint
 from openpyxl.chart.layout import Layout, ManualLayout
@@ -3317,10 +3326,27 @@ def main():
     parser.add_argument("--sector", default="Consumer", help="Industry Sector (Consumer, FMCG, Auto, IT, Banking)")
     parser.add_argument("--email", default="siddheshumrigar@gmail.com", help="Recipient email address")
     parser.add_argument("--output_dir", default="/home/ubuntu", help="Directory to save artifacts")
+    parser.add_argument("--learn", help="Teach the agent a permanent rule or calibration (e.g. 'sector:IT:dio=0')")
     args = parser.parse_args()
 
     sym = args.ticker if (args.ticker.endswith(".NS") or args.ticker.startswith("^")) else f"{args.ticker}.NS"
     clean_sym = sym.replace(".NS", "").replace("^", "")
+
+    memory = None
+    if AgentMemoryManager:
+        try:
+            mem_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory")
+            memory = AgentMemoryManager(mem_dir)
+            if args.learn:
+                parts = args.learn.split(":")
+                if len(parts) == 3:
+                    cat, key, val = parts[0].strip(), parts[1].strip(), parts[2].strip()
+                    memory.record_learning(f"{cat}_overrides", key, {cat: val})
+                else:
+                    memory.record_learning("user_preferences", "custom_rule", {"rule": args.learn})
+                print(f"✅ Learned and saved rule to memory bank: {args.learn}")
+        except Exception as e_mem:
+            print(f"ℹ️ Memory hook note: {e_mem}")
 
     excel_path = os.path.join(args.output_dir, f"{clean_sym}_Valuation_Model.xlsx")
     pdf_path = os.path.join(args.output_dir, f"{clean_sym}_Equity_Research_Report.pdf")
@@ -3462,6 +3488,11 @@ Institutional Equity Research Group (Institutional Equity Research & Valuation)
         f_wa.write(whatsapp_digest)
 
     print(f"✅ All artifacts generated and verified successfully!")
+    if memory:
+        try:
+            memory.log_research_run(clean_sym, sample_data["name"], sample_data["cmp"], sample_data["target_price"], sample_data["verdict"], sample_data["margin_of_safety"])
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
