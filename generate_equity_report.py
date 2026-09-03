@@ -2989,24 +2989,41 @@ def generate_institutional_25p_pdf(data: dict, output_path: str):
     rev_base = float(data.get("revenue_cr", max(1000.0, mcap / 2.5)))
     factors = [0.72, 0.85, 1.0, 1.15, 1.32, 1.50]
     r_vals = [round(rev_base * f, 1) for f in factors]
-    cogs_vals = [round(r * 0.62, 1) for r in r_vals]
-    gp_vals = [round(r - c, 1) for r, c in zip(r_vals, cogs_vals)]
-    opex_vals = [round(r * 0.20, 1) for r in r_vals]
-    ebitda_vals = [round(gp - op, 1) for gp, op in zip(gp_vals, opex_vals)]
-    ebit_vals = [round(eb * 0.84, 1) for eb in ebitda_vals]
-    pat_vals = [round(eb * 0.72, 1) for eb in ebit_vals]
+    
+    is_it_service = sector_info.get("type") in ["IT_SERVICES", "ERD_TECH"] or any(k in sector.upper() for k in ["IT", "TECH", "SOFTWARE", "CONSULTING"])
+    
+    if is_it_service:
+        cost1_label = "Employee Benefit Expenses (Personnel)"
+        cost1_vals = [round(r * 0.56, 1) for r in r_vals]
+        gp_label = "Gross Value Add / Contribution"
+        gp_vals = [round(r - c, 1) for r, c in zip(r_vals, cost1_vals)]
+        cost2_label = "Subcontracting & SG&A Overheads"
+        cost2_vals = [round(r * 0.20, 1) for r in r_vals]
+        ebitda_vals = [round(gp - op, 1) for gp, op in zip(gp_vals, cost2_vals)]
+        ebit_vals = [round(eb * 0.89, 1) for eb in ebitda_vals]
+        pat_vals = [round(ebit * 0.76, 1) for ebit in ebit_vals]
+    else:
+        cost1_label = "Cost of Goods Sold / Materials"
+        cost1_vals = [round(r * 0.62, 1) for r in r_vals]
+        gp_label = "Gross Profit"
+        gp_vals = [round(r - c, 1) for r, c in zip(r_vals, cost1_vals)]
+        cost2_label = "Operating Expenses (SG&A, Staff)"
+        cost2_vals = [round(r * 0.20, 1) for r in r_vals]
+        ebitda_vals = [round(gp - op, 1) for gp, op in zip(gp_vals, cost2_vals)]
+        ebit_vals = [round(eb * 0.84, 1) for eb in ebitda_vals]
+        pat_vals = [round(ebit * 0.72, 1) for ebit in ebit_vals]
 
     is_table_data = [
         [Paragraph("Consolidated Line Item (Rs. Cr)", th_dark), Paragraph("FY22 (A)", th_dark), Paragraph("FY23 (A)", th_dark), Paragraph("FY24 (A)", th_dark), Paragraph("FY25 (A)", th_dark), Paragraph("FY26E", th_dark), Paragraph("FY27E", th_dark)],
-        [Paragraph("Gross Revenue from Operations", td_bold), Paragraph(f"{r_vals[0]:,.0f}", td_style), Paragraph(f"{r_vals[1]:,.0f}", td_style), Paragraph(f"{r_vals[2]:,.0f}", td_style), Paragraph(f"{r_vals[3]:,.0f}", td_style), Paragraph(f"{r_vals[4]:,.0f}", td_style), Paragraph(f"{r_vals[5]:,.0f}", td_style)],
-        [Paragraph("Cost of Goods Sold / Materials", td_style), Paragraph(f"({cogs_vals[0]:,.0f})", td_style), Paragraph(f"({cogs_vals[1]:,.0f})", td_style), Paragraph(f"({cogs_vals[2]:,.0f})", td_style), Paragraph(f"({cogs_vals[3]:,.0f})", td_style), Paragraph(f"({cogs_vals[4]:,.0f})", td_style), Paragraph(f"({cogs_vals[5]:,.0f})", td_style)],
-        [Paragraph("Gross Profit", td_bold), Paragraph(f"{gp_vals[0]:,.0f}", td_bold), Paragraph(f"{gp_vals[1]:,.0f}", td_bold), Paragraph(f"{gp_vals[2]:,.0f}", td_bold), Paragraph(f"{gp_vals[3]:,.0f}", td_bold), Paragraph(f"{gp_vals[4]:,.0f}", td_bold), Paragraph(f"{gp_vals[5]:,.0f}", td_bold)],
-        [Paragraph("Operating Expenses (SG&A, Staff)", td_style), Paragraph(f"({opex_vals[0]:,.0f})", td_style), Paragraph(f"({opex_vals[1]:,.0f})", td_style), Paragraph(f"({opex_vals[2]:,.0f})", td_style), Paragraph(f"({opex_vals[3]:,.0f})", td_style), Paragraph(f"({opex_vals[4]:,.0f})", td_style), Paragraph(f"({opex_vals[5]:,.0f})", td_style)],
-        [Paragraph("Operating EBITDA", td_bold), Paragraph(f"{ebitda_vals[0]:,.0f}", td_bold), Paragraph(f"{ebitda_vals[1]:,.0f}", td_bold), Paragraph(f"{ebitda_vals[2]:,.0f}", td_bold), Paragraph(f"{ebitda_vals[3]:,.0f}", td_bold), Paragraph(f"{ebitda_vals[4]:,.0f}", td_bold), Paragraph(f"{ebitda_vals[5]:,.0f}", td_bold)],
-        [Paragraph("EBITDA Margin %", td_style), Paragraph("18.0%", td_style), Paragraph("18.0%", td_style), Paragraph("18.0%", td_style), Paragraph("18.2%", td_style), Paragraph("18.5%", td_style), Paragraph("18.8%", td_style)],
-        [Paragraph("Operating EBIT", td_bold), Paragraph(f"{ebit_vals[0]:,.0f}", td_style), Paragraph(f"{ebit_vals[1]:,.0f}", td_style), Paragraph(f"{ebit_vals[2]:,.0f}", td_style), Paragraph(f"{ebit_vals[3]:,.0f}", td_style), Paragraph(f"{ebit_vals[4]:,.0f}", td_style), Paragraph(f"{ebit_vals[5]:,.0f}", td_style)],
-        [Paragraph("Net Profit After Tax (PAT)", td_bold), Paragraph(f"{pat_vals[0]:,.0f}", td_bold), Paragraph(f"{pat_vals[1]:,.0f}", td_bold), Paragraph(f"{pat_vals[2]:,.0f}", td_bold), Paragraph(f"{pat_vals[3]:,.0f}", td_bold), Paragraph(f"{pat_vals[4]:,.0f}", td_bold), Paragraph(f"{pat_vals[5]:,.0f}", td_bold)],
-        [Paragraph("Net Profit Margin %", td_style), Paragraph("13.0%", td_style), Paragraph("13.0%", td_style), Paragraph("13.0%", td_style), Paragraph("13.2%", td_style), Paragraph("13.4%", td_style), Paragraph("13.6%", td_style)]
+        [Paragraph("Gross Revenue from Operations", td_bold)] + [Paragraph(f"{v:,.0f}", td_style) for v in r_vals],
+        [Paragraph(cost1_label, td_style)] + [Paragraph(f"({v:,.0f})", td_style) for v in cost1_vals],
+        [Paragraph(gp_label, td_bold)] + [Paragraph(f"{v:,.0f}", td_bold) for v in gp_vals],
+        [Paragraph(cost2_label, td_style)] + [Paragraph(f"({v:,.0f})", td_style) for v in cost2_vals],
+        [Paragraph("Operating EBITDA", td_bold)] + [Paragraph(f"{v:,.0f}", td_bold) for v in ebitda_vals],
+        [Paragraph("EBITDA Margin %", td_style)] + [Paragraph(f"{(eb/r)*100:.1f}%", td_style) for eb, r in zip(ebitda_vals, r_vals)],
+        [Paragraph("Operating EBIT", td_bold)] + [Paragraph(f"{v:,.0f}", td_style) for v in ebit_vals],
+        [Paragraph("Net Profit After Tax (PAT)", td_bold)] + [Paragraph(f"{v:,.0f}", td_bold) for v in pat_vals],
+        [Paragraph("Net Profit Margin %", td_style)] + [Paragraph(f"{(p/r)*100:.1f}%", td_style) for p, r in zip(pat_vals, r_vals)]
     ]
     t_is = Table(is_table_data, colWidths=[156, 60, 60, 60, 60, 60, 60])
     t_is.setStyle(TableStyle([
