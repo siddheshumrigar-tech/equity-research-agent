@@ -1,0 +1,30 @@
+# Generated output packages
+*.pdf
+*.xlsx
+*.png
+/output/
+/reports/
+/tmp/
+
+# Python bytecode & environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Private credentials
+.env
+.env.*
+*.key
+*.pem
+credentials.json
