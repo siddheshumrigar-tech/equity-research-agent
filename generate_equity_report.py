@@ -562,11 +562,11 @@ def attach_executive_banking_dashboard(ws_dash, ws_eng, data, sector_info, ws_is
     
     # ── 2. TOP 7 KPI STAT CARDS (Cols F to X, Rows 1 to 6) — EXECUTIVE INSTITUTIONAL ARCHITECTURE ──
     cards_meta = [
-        (6, 8, "Total Advances", "=Dashboard_Engine!B4", "=Dashboard_Engine!D4", "Rs. #,##0.0"),
-        (9, 11, "Total Deposits", "=Dashboard_Engine!B5", "=Dashboard_Engine!D5", "Rs. #,##0.0"),
-        (12, 14, "Net Interest Income", "=Dashboard_Engine!B6", "=Dashboard_Engine!D6", "Rs. #,##0.0"),
-        (15, 17, "Operating Profit", "=Dashboard_Engine!B7", "=Dashboard_Engine!D7", "Rs. #,##0.0"),
-        (18, 20, "Net Profit (PAT)", "=Dashboard_Engine!B8", "=Dashboard_Engine!D8", "Rs. #,##0.0"),
+        (6, 8, "Total Advances", "=Dashboard_Engine!B4", "=Dashboard_Engine!D4", "#,##0.0"),
+        (9, 11, "Total Deposits", "=Dashboard_Engine!B5", "=Dashboard_Engine!D5", "#,##0.0"),
+        (12, 14, "Net Interest Income", "=Dashboard_Engine!B6", "=Dashboard_Engine!D6", "#,##0.0"),
+        (15, 17, "Operating Profit", "=Dashboard_Engine!B7", "=Dashboard_Engine!D7", "#,##0.0"),
+        (18, 20, "Net Profit (PAT)", "=Dashboard_Engine!B8", "=Dashboard_Engine!D8", "#,##0.0"),
         (21, 22, "RoA %", "=Dashboard_Engine!B9", "=Dashboard_Engine!D9", "0.00%"),
         (23, 24, "RoE %", "=Dashboard_Engine!B10", "=Dashboard_Engine!D10", "0.0%")
     ]
@@ -601,7 +601,7 @@ def attach_executive_banking_dashboard(ws_dash, ws_eng, data, sector_info, ws_is
             ws_dash.merge_cells(f"{top_left_pct}:{bottom_right_pct}")
         ws_dash[top_left_pct] = pct_formula
         ws_dash[top_left_pct].font = card_pct_font
-        ws_dash[top_left_pct].number_format = '+0.0% "VS Pre Year";-0.0% "VS Pre Year";0.0% "VS Pre Year"'
+        ws_dash[top_left_pct].number_format = '+0.0%;-0.0%;0.0%'
         ws_dash[top_left_pct].alignment = Alignment(horizontal="center", vertical="center")
 
     # ── 3. SIX DYNAMIC CHARTS (2x3 GRID, ROWS 8 TO 38) ──
@@ -690,14 +690,14 @@ def attach_executive_banking_dashboard(ws_dash, ws_eng, data, sector_info, ws_is
     for r_idx, (m_name, f_val, f_up, weight, f_contrib) in enumerate(ff_rows, 42):
         ws_dash.cell(r_idx, 1, m_name).font = bold_font
         c_tgt = ws_dash.cell(r_idx, 2, f_val)
-        c_tgt.number_format = "Rs. #,##0.00"
+        c_tgt.number_format = "#,##0.00"
         c_tgt.font = bold_font
         ws_dash.cell(r_idx, 3, f_up).font = normal_font
         c_w = ws_dash.cell(r_idx, 4, weight)
         c_w.number_format = "0.0%"
         c_w.alignment = Alignment(horizontal="right")
         c_con = ws_dash.cell(r_idx, 5, f_contrib)
-        c_con.number_format = "Rs. #,##0.00"
+        c_con.number_format = "#,##0.00"
         c_con.font = bold_font
         for c in range(1, 6):
             ws_dash.cell(r_idx, c).border = thin_border
@@ -706,11 +706,11 @@ def attach_executive_banking_dashboard(ws_dash, ws_eng, data, sector_info, ws_is
     ws_dash.cell(46, 1).fill = light_gold_fill
     c_fin = ws_dash.cell(46, 2, "=SUM(E42:E45)")
     c_fin.font = Font(name="Calibri", size=12, bold=True, color="1A365D")
-    c_fin.number_format = "Rs. #,##0.00"
+    c_fin.number_format = "#,##0.00"
     c_fin.fill = gold_fill
     ws_dash.cell(46, 3, f"=TEXT((B46-{cmp})/{cmp}, \"+0.0%;-0.0%\")").font = bold_font
     ws_dash.cell(46, 4, "=SUM(D42:D45)").number_format = "0.0%"
-    ws_dash.cell(46, 5, "=SUM(E42:E45)").number_format = "Rs. #,##0.00"
+    ws_dash.cell(46, 5, "=SUM(E42:E45)").number_format = "#,##0.00"
     for c in range(1, 6):
         ws_dash.cell(46, c).border = thin_border
         
@@ -1495,9 +1495,9 @@ def generate_banking_excel_model(data: dict, output_path: str):
         ("Cost of Equity (Ke = Rf + β × ERP)", "=Drivers!$F$19+(Drivers!$F$21*Drivers!$F$20)", "0.00%", "CAPM Required Equity Return"),
         ("Terminal Perpetual Growth Rate (g)", "=Drivers!$F$22", "0.00%", "Long-Term Bank Growth"),
         ("JUSTIFIED THEORETICAL P/B MULTIPLE", "=(B4-B6)/(B5-B6)", "0.00x", "★ Fundamental Justified P/BV Anchor"),
-        ("Projected FY26E Book Value Per Share (BVPS in Rs. )", round(bvps * 1.15, 2), "Rs. #,##0.00", "Forward Book Value Per Share"),
-        ("IMPLIED P/BV INTRINSIC VALUE PER SHARE (Rs. )", "=B7*B8", "Rs. #,##0.00", "★ Target Per Share Price via P/BV Matrix"),
-        ("Current Market Price (CMP)", cmp, "Rs. #,##0.00", "Live Exchange Price"),
+        ("Projected FY26E Book Value Per Share (BVPS in Rs. )", round(bvps * 1.15, 2), "#,##0.00", "Forward Book Value Per Share"),
+        ("IMPLIED P/BV INTRINSIC VALUE PER SHARE (Rs. )", "=B7*B8", "#,##0.00", "★ Target Per Share Price via P/BV Matrix"),
+        ("Current Market Price (CMP)", cmp, "#,##0.00", "Live Exchange Price"),
         ("P/BV Margin of Safety %", "=TEXT((B9-B10)/B10, \"+0.0%;-0.0%\")", "@", "Upside to Fundamental P/B Value")
     ]
     
@@ -1695,7 +1695,7 @@ def generate_corporate_excel_model(data: dict, output_path: str, sector_info: di
         ("Raw Regression Beta (β)", 1.05, 0.95, 1.20, "0.00"),
         ("Pre-Tax Cost of Debt (Kd)", 0.082, 0.078, 0.090, "0.00%"),
         ("Terminal Perpetuity Growth Rate (g)", 0.045, 0.055, 0.035, "0.0%"),
-        ("Target Terminal Exit Multiple (EV/EBITDA)", 28.0, 34.0, 20.0, "0.0x"),
+        ("Target Terminal Exit Multiple (EV/EBITDA)", 28.0, 34.0, 20.0, "0.0"),
         ("Debt Financing Mix for Negative FCF", 0.50, 0.50, 0.50, "0.0%")
     ]
     
