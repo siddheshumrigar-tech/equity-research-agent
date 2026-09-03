@@ -3319,18 +3319,23 @@ def generate_institutional_25p_pdf(data: dict, output_path: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Hermes AI Tier-1 Institutional Financial Model & Equity Research Generator")
-    parser.add_argument("--ticker", required=True, help="Stock ticker (e.g. TITAN.NS, HINDUNILVR.NS, TATAMOTORS.NS, HDFCBANK.NS)")
+    parser = argparse.ArgumentParser(description="Autonomous Tier-1 Institutional Financial Model & Equity Research Generator")
+    parser.add_argument("--ticker", required=True, help="Stock ticker (e.g. TITAN.NS, HINDUNILVR.NS, TATAMOTORS.NS, HDFCBANK.NS, TCS.NS)")
     parser.add_argument("--name", default="Company Ltd", help="Full Company Name")
     parser.add_argument("--cmp", type=float, default=1000.0, help="Current Market Price (CMP)")
-    parser.add_argument("--sector", default="Consumer", help="Industry Sector (Consumer, FMCG, Auto, IT, Banking)")
-    parser.add_argument("--email", default="siddheshumrigar@gmail.com", help="Recipient email address")
-    parser.add_argument("--output_dir", default="/home/ubuntu", help="Directory to save artifacts")
+    parser.add_argument("--sector", default="Consumer", help="Industry Sector (Consumer, FMCG, Auto, IT, Banking, Energy)")
+    parser.add_argument("--email", default=None, help="Optional recipient email address for SMTP dispatch (default: None - local only)")
+    parser.add_argument("--output_dir", default="./output", help="Directory to save generated artifacts (default: ./output)")
     parser.add_argument("--learn", help="Teach the agent a permanent rule or calibration (e.g. 'sector:IT:dio=0')")
     args = parser.parse_args()
 
     sym = args.ticker if (args.ticker.endswith(".NS") or args.ticker.startswith("^")) else f"{args.ticker}.NS"
     clean_sym = sym.replace(".NS", "").replace("^", "")
+
+    output_dir = os.path.abspath(args.output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+    excel_path = os.path.join(output_dir, f"{clean_sym}_Valuation_Model.xlsx")
+    pdf_path = os.path.join(output_dir, f"{clean_sym}_Equity_Research_Report.pdf")
 
     memory = None
     if AgentMemoryManager:
@@ -3347,9 +3352,6 @@ def main():
                 print(f"✅ Learned and saved rule to memory bank: {args.learn}")
         except Exception as e_mem:
             print(f"ℹ️ Memory hook note: {e_mem}")
-
-    excel_path = os.path.join(args.output_dir, f"{clean_sym}_Valuation_Model.xlsx")
-    pdf_path = os.path.join(args.output_dir, f"{clean_sym}_Equity_Research_Report.pdf")
 
     cmp_val = args.cmp
     if "HDFC" in clean_sym and (cmp_val < 800 or cmp_val > 3000):
@@ -3418,13 +3420,13 @@ def main():
         email_script = "/home/ubuntu/.hermes/bin/hermes_email.py"
         if os.path.exists(email_script):
             subject = f"Institutional Equity Research Report & 10-Tab Dynamic Model: {args.name} ({clean_sym})"
-            body = f"""Hello Siddhesh,
+            body = f"""Hello,
 
-Attached is the upgraded Tier-1 Institutional Equity Research Package for {args.name} ({clean_sym}).
+Attached is the Institutional Equity Research Package for {args.name} ({clean_sym}).
 
 Package Artifacts:
-1. {clean_sym}_Valuation_Model.xlsx — 10-Tab Institutional Dynamic Financial Model (Executive Institutional Architecture)
-2. {clean_sym}_Equity_Research_Report.pdf — 20+ Page Institutional Research Report (Sector-tailored Porter's 5 Forces, SWOT, DuPont, Technical Levels & SEBI Disclaimers).
+1. {clean_sym}_Valuation_Model.xlsx — 10-Tab Institutional Dynamic Financial Model (Tesla-Style Architecture)
+2. {clean_sym}_Equity_Research_Report.pdf — 16-Page Institutional Research Report.
 
 Executive Summary:
 • Recommendation: {sample_data['verdict']}
@@ -3433,18 +3435,21 @@ Executive Summary:
 • Margin of Safety: {sample_data['margin_of_safety']}
 
 Best regards,
-Institutional Equity Research Group (Institutional Equity Research & Valuation)
+Institutional Equity Research Group
 """
             print(f"Dispatching package (Excel + PDF) to {args.email}...")
-            cmd = [
-                "python3", email_script,
-                "--to", args.email,
-                "--subject", subject,
-                "--body", body,
-                "--files", excel_path, pdf_path
-            ]
-            subprocess.run(cmd)
-            print("✅ Email dispatched successfully with BOTH Excel (.xlsx) Model and PDF (.pdf) Report!")
+            try:
+                cmd = [
+                    "python3", email_script,
+                    "--to", args.email,
+                    "--subject", subject,
+                    "--body", body,
+                    "--files", excel_path, pdf_path
+                ]
+                subprocess.run(cmd)
+                print(f"✅ Email dispatched successfully to {args.email}!")
+            except Exception as e_mail:
+                print(f"ℹ️ Email dispatch note: {e_mail}")
 
     sector_info = resolve_sector_archetype(clean_sym, args.sector)
     is_bank = sector_info["is_bank"]
@@ -3452,8 +3457,9 @@ Institutional Equity Research Group (Institutional Equity Research & Valuation)
     val_line1 = f"• Justified P/B Matrix: Rs. {cmp_val*1.22:,.1f} (+22.0%)" if is_bank else f"• 10-Yr DCF (Mid-Year): Rs. {cmp_val*1.20:,.1f} (+20.0%)"
     val_line2 = f"• 5-Yr Dividend Discount Model: Rs. {cmp_val*1.18:,.1f}" if is_bank else f"• Reverse DCF Implied Growth: 9.8% CAGR"
     val_line3 = f"• Forward P/E Multiple: Rs. {cmp_val*1.12:,.1f}" if is_bank else f"• Forward P/E Multiple: Rs. {cmp_val*1.14:,.1f}"
+    delivery_line = f"📩 *Package dispatched to:* {args.email}" if args.email else f"📁 *Artifacts saved in:* `{output_dir}`"
     
-    whatsapp_digest = f"""📈 *INSTITUTIONAL EQUITY RESEARCH | {clean_sym}*
+    executive_digest = f"""📈 *INSTITUTIONAL EQUITY RESEARCH | {clean_sym}*
 ━━━━━━━━━━━━━━━━━━━━
 🏢 *Company:* {args.name} ({clean_sym})
 🏷️ *CMP:* Rs. {cmp_val:,.2f} | *Target Price:* Rs. {sample_data['target_price']:,.2f}
@@ -3474,18 +3480,20 @@ Institutional Equity Research Group (Institutional Equity Research & Valuation)
 • Pivot (P): Rs. {cmp_val*1.00:,.1f}
 • S1: Rs. {cmp_val*0.97:,.1f} | S2: Rs. {cmp_val*0.93:,.1f}
 
-📩 *Full 10-Tab Financial Model (.xlsx) + 20+ Page Research Report (.pdf) emailed to {args.email}*
+{delivery_line}
+• 10-Tab Model: {excel_path}
+• 16-Page Report: {pdf_path}
 ━━━━━━━━━━━━━━━━━━━━"""
 
     print("\n" + "=" * 60)
-    print("📱 INSTANT WHATSAPP EXECUTIVE DIGEST:")
+    print("📊 EXECUTIVE INSTITUTIONAL RESEARCH DIGEST:")
     print("=" * 60)
-    print(whatsapp_digest)
+    print(executive_digest)
     print("=" * 60)
 
-    wa_path = os.path.join(args.output_dir, f"{clean_sym}_WhatsApp_Digest.txt")
-    with open(wa_path, "w", encoding="utf-8") as f_wa:
-        f_wa.write(whatsapp_digest)
+    digest_path = os.path.join(output_dir, f"{clean_sym}_Executive_Digest.txt")
+    with open(digest_path, "w", encoding="utf-8") as f_d:
+        f_d.write(executive_digest)
 
     print(f"✅ All artifacts generated and verified successfully!")
     if memory:
