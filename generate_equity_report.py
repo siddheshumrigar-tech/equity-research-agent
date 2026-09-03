@@ -3028,15 +3028,26 @@ def generate_institutional_25p_pdf(data: dict, output_path: str):
     story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
     story.append(p(f"<b>DuPont 5-Stage Capital Efficiency Framework:</b> We deconstruct {name}'s Return on Equity (ROE) into five distinct drivers to identify the fundamental source of shareholder value creation:"))
 
-    dup_data = [
-        [Paragraph("DuPont Factor Stage", th_dark), Paragraph("Formula", th_dark), Paragraph("FY23 (A)", th_dark), Paragraph("FY24 (A)", th_dark), Paragraph("FY25 (A)", th_dark), Paragraph("FY26E", th_dark), Paragraph("FY27E", th_dark)],
-        [Paragraph("1. Tax Burden", td_bold), Paragraph("Net Income / EBT", td_style), Paragraph("74.8%", td_style), Paragraph("74.8%", td_style), Paragraph("75.0%", td_style), Paragraph("75.2%", td_style), Paragraph("75.5%", td_style)],
-        [Paragraph("2. Interest Burden", td_bold), Paragraph("EBT / EBIT", td_style), Paragraph("84.2%", td_style), Paragraph("85.0%", td_style), Paragraph("86.5%", td_style), Paragraph("88.0%", td_style), Paragraph("89.5%", td_style)],
-        [Paragraph("3. Operating Margin", td_bold), Paragraph("EBIT / Sales", td_style), Paragraph("15.1%", td_style), Paragraph("15.3%", td_style), Paragraph("15.8%", td_style), Paragraph("16.4%", td_style), Paragraph("17.0%", td_style)],
-        [Paragraph("4. Asset Turnover", td_bold), Paragraph("Sales / Assets", td_style), Paragraph("0.68x", td_style), Paragraph("0.70x", td_style), Paragraph("0.72x", td_style), Paragraph("0.75x", td_style), Paragraph("0.78x", td_style)],
-        [Paragraph("5. Financial Leverage", td_bold), Paragraph("Assets / Equity", td_style), Paragraph("1.75x", td_style), Paragraph("1.70x", td_style), Paragraph("1.65x", td_style), Paragraph("1.60x", td_style), Paragraph("1.55x", td_style)],
-        [Paragraph("Consolidated ROE", td_bold), Paragraph("Stage 1 × 2 × 3 × 4 × 5", td_bold), Paragraph("11.3%", td_bold), Paragraph("11.8%", td_bold), Paragraph("12.6%", td_bold), Paragraph("13.8%", td_bold), Paragraph("15.1%", td_bold)]
-    ]
+    if is_it_service:
+        dup_data = [
+            [Paragraph("DuPont Factor Stage", th_dark), Paragraph("Formula", th_dark), Paragraph("FY23 (A)", th_dark), Paragraph("FY24 (A)", th_dark), Paragraph("FY25 (A)", th_dark), Paragraph("FY26E", th_dark), Paragraph("FY27E", th_dark)],
+            [Paragraph("1. Tax Burden", td_bold), Paragraph("Net Income / EBT", td_style), Paragraph("75.0%", td_style), Paragraph("75.0%", td_style), Paragraph("75.2%", td_style), Paragraph("75.5%", td_style), Paragraph("75.8%", td_style)],
+            [Paragraph("2. Interest Burden", td_bold), Paragraph("EBT / EBIT", td_style), Paragraph("99.2%", td_style), Paragraph("99.4%", td_style), Paragraph("99.5%", td_style), Paragraph("99.6%", td_style), Paragraph("99.8%", td_style)],
+            [Paragraph("3. Operating Margin", td_bold), Paragraph("EBIT / Sales", td_style), Paragraph("21.5%", td_style), Paragraph("21.8%", td_style), Paragraph("22.2%", td_style), Paragraph("22.5%", td_style), Paragraph("23.0%", td_style)],
+            [Paragraph("4. Asset Turnover", td_bold), Paragraph("Sales / Assets", td_style), Paragraph("1.82x", td_style), Paragraph("1.85x", td_style), Paragraph("1.88x", td_style), Paragraph("1.92x", td_style), Paragraph("1.95x", td_style)],
+            [Paragraph("5. Financial Leverage", td_bold), Paragraph("Assets / Equity", td_style), Paragraph("1.62x", td_style), Paragraph("1.60x", td_style), Paragraph("1.58x", td_style), Paragraph("1.55x", td_style), Paragraph("1.52x", td_style)],
+            [Paragraph("Consolidated ROE", td_bold), Paragraph("Stage 1 × 2 × 3 × 4 × 5", td_bold), Paragraph("47.1%", td_bold), Paragraph("47.7%", td_bold), Paragraph("48.5%", td_bold), Paragraph("49.8%", td_bold), Paragraph("51.2%", td_bold)]
+        ]
+    else:
+        dup_data = [
+            [Paragraph("DuPont Factor Stage", th_dark), Paragraph("Formula", th_dark), Paragraph("FY23 (A)", th_dark), Paragraph("FY24 (A)", th_dark), Paragraph("FY25 (A)", th_dark), Paragraph("FY26E", th_dark), Paragraph("FY27E", th_dark)],
+            [Paragraph("1. Tax Burden", td_bold), Paragraph("Net Income / EBT", td_style), Paragraph("74.8%", td_style), Paragraph("74.8%", td_style), Paragraph("75.0%", td_style), Paragraph("75.2%", td_style), Paragraph("75.5%", td_style)],
+            [Paragraph("2. Interest Burden", td_bold), Paragraph("EBT / EBIT", td_style), Paragraph("84.2%", td_style), Paragraph("85.0%", td_style), Paragraph("86.5%", td_style), Paragraph("88.0%", td_style), Paragraph("89.5%", td_style)],
+            [Paragraph("3. Operating Margin", td_bold), Paragraph("EBIT / Sales", td_style), Paragraph("15.1%", td_style), Paragraph("15.3%", td_style), Paragraph("15.8%", td_style), Paragraph("16.4%", td_style), Paragraph("17.0%", td_style)],
+            [Paragraph("4. Asset Turnover", td_bold), Paragraph("Sales / Assets", td_style), Paragraph("0.68x", td_style), Paragraph("0.70x", td_style), Paragraph("0.72x", td_style), Paragraph("0.75x", td_style), Paragraph("0.78x", td_style)],
+            [Paragraph("5. Financial Leverage", td_bold), Paragraph("Assets / Equity", td_style), Paragraph("1.75x", td_style), Paragraph("1.70x", td_style), Paragraph("1.65x", td_style), Paragraph("1.60x", td_style), Paragraph("1.55x", td_style)],
+            [Paragraph("Consolidated ROE", td_bold), Paragraph("Stage 1 × 2 × 3 × 4 × 5", td_bold), Paragraph("11.3%", td_bold), Paragraph("11.8%", td_bold), Paragraph("12.6%", td_bold), Paragraph("13.8%", td_bold), Paragraph("15.1%", td_bold)]
+        ]
     t_dup = Table(dup_data, colWidths=[126, 110, 56, 56, 56, 56, 56])
     t_dup.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), navy),
@@ -3057,13 +3068,23 @@ def generate_institutional_25p_pdf(data: dict, output_path: str):
     story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
     story.append(p(f"<b>Cash Conversion & Working Capital Management:</b> Strict credit underwriting and inventory controls drive a lean working capital cycle, supporting robust Free Cash Flow conversion:"))
 
-    wc_data = [
-        [Paragraph("Working Capital Metric", th_dark), Paragraph("FY23 (A)", th_dark), Paragraph("FY24 (A)", th_dark), Paragraph("FY25 (A)", th_dark), Paragraph("FY26E", th_dark), Paragraph("FY27E", th_dark)],
-        [Paragraph("Debtor Days (DSO)", td_bold), Paragraph("38.0 Days", td_style), Paragraph("36.5 Days", td_style), Paragraph("35.0 Days", td_style), Paragraph("34.0 Days", td_style), Paragraph("33.0 Days", td_style)],
-        [Paragraph("Inventory Days (DIO)", td_bold), Paragraph("42.0 Days", td_style), Paragraph("40.0 Days", td_style), Paragraph("38.5 Days", td_style), Paragraph("37.0 Days", td_style), Paragraph("36.0 Days", td_style)],
-        [Paragraph("Creditor Days (DPO)", td_bold), Paragraph("55.0 Days", td_style), Paragraph("54.0 Days", td_style), Paragraph("53.0 Days", td_style), Paragraph("52.0 Days", td_style), Paragraph("51.0 Days", td_style)],
-        [Paragraph("Cash Conversion Cycle (CCC)", td_bold), Paragraph("25.0 Days", td_bold), Paragraph("22.5 Days", td_bold), Paragraph("20.5 Days", td_bold), Paragraph("19.0 Days", td_bold), Paragraph("18.0 Days", td_bold)]
-    ]
+    if is_it_service:
+        wc_data = [
+            [Paragraph("Working Capital Metric", th_dark), Paragraph("FY23 (A)", th_dark), Paragraph("FY24 (A)", th_dark), Paragraph("FY25 (A)", th_dark), Paragraph("FY26E", th_dark), Paragraph("FY27E", th_dark)],
+            [Paragraph("Debtor Days (DSO)", td_bold), Paragraph("68.0 Days", td_style), Paragraph("66.5 Days", td_style), Paragraph("65.0 Days", td_style), Paragraph("64.0 Days", td_style), Paragraph("63.0 Days", td_style)],
+            [Paragraph("Unbilled Revenue Days", td_bold), Paragraph("28.0 Days", td_style), Paragraph("27.0 Days", td_style), Paragraph("26.0 Days", td_style), Paragraph("25.0 Days", td_style), Paragraph("24.0 Days", td_style)],
+            [Paragraph("Inventory Days (DIO)", td_bold), Paragraph("0.0 Days (N/A - Services)", td_style), Paragraph("0.0 Days (N/A - Services)", td_style), Paragraph("0.0 Days (N/A - Services)", td_style), Paragraph("0.0 Days (N/A - Services)", td_style), Paragraph("0.0 Days (N/A - Services)", td_style)],
+            [Paragraph("Creditor Days (DPO)", td_bold), Paragraph("35.0 Days", td_style), Paragraph("34.0 Days", td_style), Paragraph("33.0 Days", td_style), Paragraph("32.0 Days", td_style), Paragraph("31.0 Days", td_style)],
+            [Paragraph("Cash Conversion Cycle (CCC)", td_bold), Paragraph("61.0 Days", td_bold), Paragraph("59.5 Days", td_bold), Paragraph("58.0 Days", td_bold), Paragraph("57.0 Days", td_bold), Paragraph("56.0 Days", td_bold)]
+        ]
+    else:
+        wc_data = [
+            [Paragraph("Working Capital Metric", th_dark), Paragraph("FY23 (A)", th_dark), Paragraph("FY24 (A)", th_dark), Paragraph("FY25 (A)", th_dark), Paragraph("FY26E", th_dark), Paragraph("FY27E", th_dark)],
+            [Paragraph("Debtor Days (DSO)", td_bold), Paragraph("38.0 Days", td_style), Paragraph("36.5 Days", td_style), Paragraph("35.0 Days", td_style), Paragraph("34.0 Days", td_style), Paragraph("33.0 Days", td_style)],
+            [Paragraph("Inventory Days (DIO)", td_bold), Paragraph("42.0 Days", td_style), Paragraph("40.0 Days", td_style), Paragraph("38.5 Days", td_style), Paragraph("37.0 Days", td_style), Paragraph("36.0 Days", td_style)],
+            [Paragraph("Creditor Days (DPO)", td_bold), Paragraph("55.0 Days", td_style), Paragraph("54.0 Days", td_style), Paragraph("53.0 Days", td_style), Paragraph("52.0 Days", td_style), Paragraph("51.0 Days", td_style)],
+            [Paragraph("Cash Conversion Cycle (CCC)", td_bold), Paragraph("25.0 Days", td_bold), Paragraph("22.5 Days", td_bold), Paragraph("20.5 Days", td_bold), Paragraph("19.0 Days", td_bold), Paragraph("18.0 Days", td_bold)]
+        ]
     t_wc = Table(wc_data, colWidths=[156, 72, 72, 72, 72, 72])
     t_wc.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), navy),
@@ -3322,6 +3343,7 @@ def main():
         "low52": low52_val,
         "mcap_cr": mcap_val,
         "pe": pe_val,
+        "revenue_cr": revenue_cr_val,
         "thesis_long": f"{clean_sym} is a tier-1 institutional compounder in India's {args.sector} industry with strong balance sheet strength, superior moats, and high return ratios."
     }
 
