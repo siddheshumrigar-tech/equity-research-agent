@@ -9,24 +9,25 @@ from openpyxl.chart import BarChart, LineChart, PieChart, Reference
 from openpyxl.worksheet.datavalidation import DataValidation
 import zipfile, xml.etree.ElementTree as ET, re, io
 
+
 def build_dashboard_engine_corporate(ws_eng, ws_is, ws_cf, ws_ppe, ws_seg, ws_dcf, ws_bs, ws_wc, sector_info):
     ws_eng.views.sheetView[0].showGridLines = True
-    ws_eng.cell(1, 1, "DASHBOARD CALCULATION ENGINE (Dynamic Lookup driven by Dashboard!E6)").font = Font(name="Calibri", size=12, bold=True)
-    
+    ws_eng.cell(1, 1, "DASHBOARD CALCULATION ENGINE (Driven by Dashboard!E4)").font = Font(name="Calibri", size=12, bold=True)
+
     # Active & Prior Year
     ws_eng.cell(3, 1, "Active Selected Year")
-    ws_eng.cell(3, 2, "=Dashboard!E6")
-    ws_eng.cell(3, 3, "=INDEX('Income Statement'!$B$3:$I$3, MAX(1, MATCH(Dashboard!E6, 'Income Statement'!$B$3:$I$3, 0) - 1))")
-    
+    ws_eng.cell(3, 2, "=Dashboard!E4")
+    ws_eng.cell(3, 3, "=INDEX('Income Statement'!$B$3:$I$3, MAX(1, MATCH(Dashboard!E4, 'Income Statement'!$B$3:$I$3, 0) - 1))")
+
     # 7 Top KPI Cards (Rows 4 to 10)
     kpis = [
-        (4, "Revenue", "=INDEX('Income Statement'!$B$4:$I$4, MATCH(Dashboard!E6, 'Income Statement'!$B$3:$I$3, 0))", "=INDEX('Income Statement'!$B$4:$I$4, MATCH(Dashboard_Engine!C$3, 'Income Statement'!$B$3:$I$3, 0))"),
-        (5, "COGS", "=-INDEX('Income Statement'!$B$6:$I$6, MATCH(Dashboard!E6, 'Income Statement'!$B$3:$I$3, 0))", "=-INDEX('Income Statement'!$B$6:$I$6, MATCH(Dashboard_Engine!C$3, 'Income Statement'!$B$3:$I$3, 0))"),
-        (6, "OPEX", "=-INDEX('Income Statement'!$B$9:$I$9, MATCH(Dashboard!E6, 'Income Statement'!$B$3:$I$3, 0))", "=-INDEX('Income Statement'!$B$9:$I$9, MATCH(Dashboard_Engine!C$3, 'Income Statement'!$B$3:$I$3, 0))"),
-        (7, "Gross Profit", "=INDEX('Income Statement'!$B$7:$I$7, MATCH(Dashboard!E6, 'Income Statement'!$B$3:$I$3, 0))", "=INDEX('Income Statement'!$B$7:$I$7, MATCH(Dashboard_Engine!C$3, 'Income Statement'!$B$3:$I$3, 0))"),
-        (8, "Net Profit", "=INDEX('Income Statement'!$B$17:$I$17, MATCH(Dashboard!E6, 'Income Statement'!$B$3:$I$3, 0))", "=INDEX('Income Statement'!$B$17:$I$17, MATCH(Dashboard_Engine!C$3, 'Income Statement'!$B$3:$I$3, 0))"),
-        (9, "ROA", "=B8/INDEX('Balance Sheet'!$B$18:$I$18, MATCH(Dashboard!E6, 'Balance Sheet'!$B$3:$I$3, 0))", "=C8/INDEX('Balance Sheet'!$B$18:$I$18, MATCH(Dashboard_Engine!C$3, 'Balance Sheet'!$B$3:$I$3, 0))"),
-        (10, "ROE", "=B8/INDEX('Balance Sheet'!$B$23:$I$23, MATCH(Dashboard!E6, 'Balance Sheet'!$B$3:$I$3, 0))", "=C8/INDEX('Balance Sheet'!$B$23:$I$23, MATCH(Dashboard_Engine!C$3, 'Balance Sheet'!$B$3:$I$3, 0))")
+        (4, "Revenue", "=INDEX('Income Statement'!$B$4:$I$4, MATCH(Dashboard!E4, 'Income Statement'!$B$3:$I$3, 0))", "=INDEX('Income Statement'!$B$4:$I$4, MATCH(Dashboard_Engine!C$3, 'Income Statement'!$B$3:$I$3, 0))"),
+        (5, "COGS", "=-INDEX('Income Statement'!$B$6:$I$6, MATCH(Dashboard!E4, 'Income Statement'!$B$3:$I$3, 0))", "=-INDEX('Income Statement'!$B$6:$I$6, MATCH(Dashboard_Engine!C$3, 'Income Statement'!$B$3:$I$3, 0))"),
+        (6, "OPEX", "=-INDEX('Income Statement'!$B$9:$I$9, MATCH(Dashboard!E4, 'Income Statement'!$B$3:$I$3, 0))", "=-INDEX('Income Statement'!$B$9:$I$9, MATCH(Dashboard_Engine!C$3, 'Income Statement'!$B$3:$I$3, 0))"),
+        (7, "Gross Profit", "=INDEX('Income Statement'!$B$7:$I$7, MATCH(Dashboard!E4, 'Income Statement'!$B$3:$I$3, 0))", "=INDEX('Income Statement'!$B$7:$I$7, MATCH(Dashboard_Engine!C$3, 'Income Statement'!$B$3:$I$3, 0))"),
+        (8, "Net Profit", "=INDEX('Income Statement'!$B$17:$I$17, MATCH(Dashboard!E4, 'Income Statement'!$B$3:$I$3, 0))", "=INDEX('Income Statement'!$B$17:$I$17, MATCH(Dashboard_Engine!C$3, 'Income Statement'!$B$3:$I$3, 0))"),
+        (9, "ROA", "=B8/INDEX('Balance Sheet'!$B$18:$I$18, MATCH(Dashboard!E4, 'Balance Sheet'!$B$3:$I$3, 0))", "=C8/INDEX('Balance Sheet'!$B$18:$I$18, MATCH(Dashboard_Engine!C$3, 'Balance Sheet'!$B$3:$I$3, 0))"),
+        (10, "ROE", "=B8/INDEX('Balance Sheet'!$B$23:$I$23, MATCH(Dashboard!E4, 'Balance Sheet'!$B$3:$I$3, 0))", "=C8/INDEX('Balance Sheet'!$B$23:$I$23, MATCH(Dashboard_Engine!C$3, 'Balance Sheet'!$B$3:$I$3, 0))")
     ]
     for r_i, label, curr_f, prior_f in kpis:
         ws_eng.cell(r_i, 1, label)
@@ -37,219 +38,355 @@ def build_dashboard_engine_corporate(ws_eng, ws_is, ws_cf, ws_ppe, ws_seg, ws_dc
         else:
             ws_eng.cell(r_i, 4, f"=IFERROR((B{r_i}-C{r_i})/ABS(C{r_i}), 0)")
 
-    # Dynamic Segment Revenue Breakdown (Rows 13 to 13 + len(segments))
-    ws_eng.cell(13, 1, "Segment / Division")
-    ws_eng.cell(13, 2, "=Dashboard!E6")
-    segments = sector_info.get("segments", [("Division A", 0.5, 0.15), ("Division B", 0.3, 0.20), ("Division C", 0.2, 0.10)])
+    # Dynamic Segment Breakdown (Rows 14 to 14 + len(segments))
+    segments = sector_info.get("segments", [("Division A", 0.5, 0.2), ("Division B", 0.3, 0.15), ("Division C", 0.15, 0.18), ("Division D", 0.05, 0.25)])
+    ws_eng.cell(13, 1, "Segment")
+    ws_eng.cell(13, 2, "=Dashboard!E4")
     for idx, (s_name, _, _) in enumerate(segments, 14):
-        seg_source_row = idx - 10
-        ws_eng.cell(idx, 1, s_name)
-        ws_eng.cell(idx, 2, f"=INDEX('Segment Breakdown'!$D${seg_source_row}:$K${seg_source_row}, MATCH(Dashboard!E6, 'Segment Breakdown'!$D$3:$K$3, 0))")
+        s_row = idx - 10
+        ws_eng.cell(idx, 1, s_name.split('(')[0].strip())
+        ws_eng.cell(idx, 2, f"=INDEX('Segment Breakdown'!$D${s_row}:$K${s_row}, MATCH(Dashboard!E4, 'Segment Breakdown'!$D$3:$K$3, 0))")
 
-    # Operating Cost & Margin Waterfall (Rows 20 to 26)
-    ws_eng.cell(20, 1, "Cost & Profit Waterfall (Rs. Cr)")
-    ws_eng.cell(20, 2, "=Dashboard!E6")
-    wf_items = [
+    # Operating Cost & Margin Waterfall (Rows 21 to 26)
+    ws_eng.cell(20, 1, "Cost Waterfall")
+    ws_eng.cell(20, 2, "=Dashboard!E4")
+    wf = [
         (21, "Revenue", "=B4"),
-        (22, "Cost of Goods Sold", "=-B5"),
+        (22, "COGS", "=-B5"),
         (23, "Gross Profit", "=B7"),
-        (24, "Operating Expenses", "=-B6"),
-        (25, "EBIT (Operating Profit)", "=INDEX('Income Statement'!$B$13:$I$13, MATCH(Dashboard!E6, 'Income Statement'!$B$3:$I$3, 0))"),
-        (26, "Net Income (PAT)", "=B8")
+        (24, "OPEX", "=-B6"),
+        (25, "EBIT", "=INDEX('Income Statement'!$B$13:$I$13, MATCH(Dashboard!E4, 'Income Statement'!$B$3:$I$3, 0))"),
+        (26, "Net Profit", "=B8")
     ]
-    for r_i, label, form in wf_items:
+    for r_i, label, form in wf:
         ws_eng.cell(r_i, 1, label)
         ws_eng.cell(r_i, 2, form)
 
-    # Trade Cycle Days (Rows 29 to 32)
+    # Trade Cycle (Rows 30 to 32)
     ws_eng.cell(29, 1, "Trade Cycle Days")
-    ws_eng.cell(29, 2, "=Dashboard!E6")
-    ws_eng.cell(30, 1, "DSO (Debtor Days)")
-    ws_eng.cell(30, 2, "=INDEX('Working Capital'!$B$4:$I$4, MATCH(Dashboard!E6, 'Working Capital'!$B$3:$I$3, 0))")
-    ws_eng.cell(31, 1, "DIO (Inventory Days)")
-    ws_eng.cell(31, 2, "=INDEX('Working Capital'!$B$5:$I$5, MATCH(Dashboard!E6, 'Working Capital'!$B$3:$I$3, 0))")
-    ws_eng.cell(32, 1, "DPO (Payable Days)")
-    ws_eng.cell(32, 2, "=INDEX('Working Capital'!$B$6:$I$6, MATCH(Dashboard!E6, 'Working Capital'!$B$3:$I$3, 0))")
+    ws_eng.cell(29, 2, "=Dashboard!E4")
+    ws_eng.cell(30, 1, "DSO")
+    ws_eng.cell(30, 2, "=INDEX('Working Capital'!$B$4:$I$4, MATCH(Dashboard!E4, 'Working Capital'!$B$3:$I$3, 0))")
+    ws_eng.cell(31, 1, "DIO")
+    ws_eng.cell(31, 2, "=INDEX('Working Capital'!$B$5:$I$5, MATCH(Dashboard!E4, 'Working Capital'!$B$3:$I$3, 0))")
+    ws_eng.cell(32, 1, "DPO")
+    ws_eng.cell(32, 2, "=INDEX('Working Capital'!$B$6:$I$6, MATCH(Dashboard!E4, 'Working Capital'!$B$3:$I$3, 0))")
 
-    # Liquidity Ratios (Rows 35 to 38)
+    # Liquidity Ratios (Rows 36 to 38)
     ws_eng.cell(35, 1, "Liquidity Ratios")
-    ws_eng.cell(35, 2, "=Dashboard!E6")
+    ws_eng.cell(35, 2, "=Dashboard!E4")
     ws_eng.cell(36, 1, "Current Ratio")
-    ws_eng.cell(36, 2, "=INDEX('Balance Sheet'!$B$16:$I$16, MATCH(Dashboard!E6, 'Balance Sheet'!$B$3:$I$3, 0))/INDEX('Balance Sheet'!$B$29:$I$29, MATCH(Dashboard!E6, 'Balance Sheet'!$B$3:$I$3, 0))")
+    ws_eng.cell(36, 2, "=INDEX('Balance Sheet'!$B$16:$I$16, MATCH(Dashboard!E4, 'Balance Sheet'!$B$3:$I$3, 0))/INDEX('Balance Sheet'!$B$29:$I$29, MATCH(Dashboard!E4, 'Balance Sheet'!$B$3:$I$3, 0))")
     ws_eng.cell(37, 1, "Quick Ratio")
-    ws_eng.cell(37, 2, "=(INDEX('Balance Sheet'!$B$16:$I$16, MATCH(Dashboard!E6, 'Balance Sheet'!$B$3:$I$3, 0))-INDEX('Working Capital'!$B$8:$I$8, MATCH(Dashboard!E6, 'Working Capital'!$B$3:$I$3, 0)))/INDEX('Balance Sheet'!$B$29:$I$29, MATCH(Dashboard!E6, 'Balance Sheet'!$B$3:$I$3, 0))")
+    ws_eng.cell(37, 2, "=(INDEX('Balance Sheet'!$B$16:$I$16, MATCH(Dashboard!E4, 'Balance Sheet'!$B$3:$I$3, 0))-INDEX('Working Capital'!$B$8:$I$8, MATCH(Dashboard!E4, 'Working Capital'!$B$3:$I$3, 0)))/INDEX('Balance Sheet'!$B$29:$I$29, MATCH(Dashboard!E4, 'Balance Sheet'!$B$3:$I$3, 0))")
     ws_eng.cell(38, 1, "Cash Ratio")
-    ws_eng.cell(38, 2, "=INDEX('Cash Flow'!$B$24:$I$24, MATCH(Dashboard!E6, 'Cash Flow'!$B$3:$I$3, 0))/INDEX('Balance Sheet'!$B$29:$I$29, MATCH(Dashboard!E6, 'Balance Sheet'!$B$3:$I$3, 0))")
+    ws_eng.cell(38, 2, "=INDEX('Cash Flow'!$B$24:$I$24, MATCH(Dashboard!E4, 'Cash Flow'!$B$3:$I$3, 0))/INDEX('Balance Sheet'!$B$29:$I$29, MATCH(Dashboard!E4, 'Balance Sheet'!$B$3:$I$3, 0))")
 
 
 def attach_executive_corporate_dashboard(ws_dash, ws_eng, data, sector_info, ws_is, ws_cf, ws_ppe, ws_seg, ws_dcf, ws_bs, ws_wc):
-    ws_dash.views.sheetView[0].showGridLines = True
-    
     ticker = data.get("ticker", "EQUITY")
     name = data.get("name", "Company Ltd")
     cmp = float(data.get("cmp", 1000.0))
     mcap = float(data.get("mcap_cr", cmp * 50.0))
     target = float(data.get("target_price", cmp * 1.18))
-    
-    navy_fill = PatternFill(start_color="1A365D", end_color="1A365D", fill_type="solid")
-    dark_green_fill = PatternFill(start_color="2D5A27", end_color="2D5A27", fill_type="solid")
-    card_bg = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
-    gray_bg = PatternFill(start_color="EDF2F7", end_color="EDF2F7", fill_type="solid")
-    
-    card_title_font = Font(name="Calibri", size=9, bold=True, color="4A5568")
-    card_val_font = Font(name="Calibri", size=13, bold=True, color="1A365D")
-    card_pct_font = Font(name="Calibri", size=9, bold=True, color="2D5A27")
-    sub_font = Font(name="Calibri", size=8, color="718096")
-    bold_font = Font(name="Calibri", size=10, bold=True)
-    normal_font = Font(name="Calibri", size=10)
-    
-    card_border = Border(
-        left=Side(style='thin', color='CBD5E0'),
-        right=Side(style='thin', color='CBD5E0'),
-        top=Side(style='thin', color='CBD5E0'),
-        bottom=Side(style='thin', color='CBD5E0')
-    )
+    sector = data.get("sector", "Diversified")
     
     # ── BUILD DASHBOARD ENGINE TAB FIRST ──
     build_dashboard_engine_corporate(ws_eng, ws_is, ws_cf, ws_ppe, ws_seg, ws_dcf, ws_bs, ws_wc, sector_info)
-    
-    # ── 1. FINANCIAL YEAR SELECTOR (B6:E6 - Exact Tesla Layout) ──
-    ws_dash["B6"] = "Financial Year"
-    ws_dash["B6"].font = Font(name="Calibri", size=11, bold=True, color="1A365D")
-    ws_dash["B6"].alignment = Alignment(horizontal="left", vertical="center")
-    
-    ws_dash["E6"] = "FY26E"
-    ws_dash["E6"].fill = dark_green_fill
-    ws_dash["E6"].font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
-    ws_dash["E6"].alignment = Alignment(horizontal="center", vertical="center")
-    
+
+    # ── 1. EXACT TESLA SHEET VIEW CONFIGURATION ──
+    ws_dash.sheet_view.showGridLines = False
+    ws_dash.sheet_view.showRowColHeaders = False
+    ws_dash.sheet_view.zoomScale = 90
+    ws_dash.sheet_view.zoomScaleNormal = 90
+
+    # Colors
+    canvas_fill = PatternFill(start_color="F2F4F7", end_color="F2F4F7", fill_type="solid")
+    white_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+    black_fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+    tesla_green_pill = PatternFill(start_color="5B8C32", end_color="5B8C32", fill_type="solid")
+    tesla_dark_green = PatternFill(start_color="385723", end_color="385723", fill_type="solid")
+    tesla_light_green = PatternFill(start_color="E2EED8", end_color="E2EED8", fill_type="solid")
+
+    card_border = Border(
+        left=Side(style='thin', color='D9D9D9'),
+        right=Side(style='thin', color='D9D9D9'),
+        top=Side(style='thin', color='D9D9D9'),
+        bottom=Side(style='thin', color='D9D9D9')
+    )
+
+    # Fill canvas with light gray
+    for r in range(1, 45):
+        for c in range(1, 26):
+            ws_dash.cell(r, c).fill = canvas_fill
+
+    # Column widths
+    col_widths = {
+        'A': 2, 'B': 9, 'C': 9, 'D': 9, 'E': 11,
+        'F': 8, 'G': 8, 'H': 8, 'I': 8, 'J': 8, 'K': 8,
+        'L': 8, 'M': 8, 'N': 8, 'O': 8, 'P': 7, 'Q': 7,
+        'R': 7, 'S': 7, 'T': 2, 'U': 10, 'V': 10, 'W': 10, 'X': 12, 'Y': 2
+    }
+    for col_let, w in col_widths.items():
+        ws_dash.column_dimensions[col_let].width = w
+
+    ws_dash.row_dimensions[1].height = 18
+    ws_dash.row_dimensions[2].height = 19
+    ws_dash.row_dimensions[3].height = 19
+    ws_dash.row_dimensions[4].height = 20
+    ws_dash.row_dimensions[5].height = 18
+    ws_dash.row_dimensions[6].height = 10
+
+    # ── 2. TOP-LEFT: COMPANY BRANDING (B1:E3) ──
+    for r in range(1, 4):
+        for c in range(2, 6):
+            ws_dash.cell(r, c).fill = black_fill
+    ws_dash.merge_cells("B1:E3")
+    ws_dash["B1"] = f"{name}\nExecutive Interactive Model"
+    ws_dash["B1"].font = Font(name="Calibri", size=13, bold=True, color="FFFFFF")
+    ws_dash["B1"].alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    # ── 3. FINANCIAL YEAR SELECTOR (B4:D5 & E4:E5) ──
+    for r in range(4, 6):
+        for c in range(2, 5):
+            ws_dash.cell(r, c).fill = tesla_green_pill
+    ws_dash.merge_cells("B4:D5")
+    ws_dash["B4"] = "Financial Year"
+    ws_dash["B4"].font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    ws_dash["B4"].alignment = Alignment(horizontal="center", vertical="center")
+
+    for r in range(4, 6):
+        ws_dash.cell(r, 5).fill = tesla_dark_green
+    ws_dash.merge_cells("E4:E5")
+    ws_dash["E4"] = "FY26E"
+    ws_dash["E4"].font = Font(name="Calibri", size=12, bold=True, color="FFFFFF")
+    ws_dash["E4"].alignment = Alignment(horizontal="center", vertical="center")
+
     dv = DataValidation(type="list", formula1='"FY23 (A), FY24 (A), FY25 (A), FY26E, FY27E, FY28E, FY29E, FY30E"', allow_blank=False)
     ws_dash.add_data_validation(dv)
-    dv.add(ws_dash["E6"])
-    
-    # ── 2. METADATA BOX (W3 to X7 - Exact Tesla Architecture) ──
-    meta_rows = [
-        (3, "Sector - ", sector_info.get("type", "Corporate")),
-        (4, "Market Cap - ", f"Rs. {mcap:,.0f} Cr"),
-        (5, "Price - ", f"Rs. {cmp:,.2f}"),
-        (6, "Fair Value - ", f"Rs. {target:,.2f}"),
-        (7, "STATUS", "ACCUMULATE" if cmp < target else "REDUCE")
-    ]
-    for r, label, val in meta_rows:
-        ws_dash.cell(r, 23, label).font = bold_font
-        ws_dash.cell(r, 23).alignment = Alignment(horizontal="right", vertical="center")
-        c_val = ws_dash.cell(r, 24, val)
-        c_val.font = Font(name="Calibri", size=10, bold=True, color="22543D" if "ACCUMULATE" in str(val) else "1A365D")
-        c_val.alignment = Alignment(horizontal="left", vertical="center")
-        
-    # ── 3. TOP 7 KPI STAT CARDS (Cols F to V, Rows 1 to 5) ──
-    cards_meta = [
-        (6, 7, "Revenue", "=Dashboard_Engine!B4", "=Dashboard_Engine!D4", "#,##0.0"),
-        (8, 9, "COGS", "=Dashboard_Engine!B5", "=Dashboard_Engine!D5", "#,##0.0"),
-        (10, 11, "OPEX", "=Dashboard_Engine!B6", "=Dashboard_Engine!D6", "#,##0.0"),
-        (12, 13, "Gross Profit", "=Dashboard_Engine!B7", "=Dashboard_Engine!D7", "#,##0.0"),
-        (14, 15, "Net Profit", "=Dashboard_Engine!B8", "=Dashboard_Engine!D8", "#,##0.0"),
+    dv.add(ws_dash["E4"])
+
+    # ── 4. SEVEN FLOATING WHITE KPI CARDS (Cols F to S, Rows 1 to 5) ──
+    cards = [
+        (6, 7, "Revenue", "=Dashboard_Engine!B4", "=Dashboard_Engine!D4", "Rs. #,##0.0"),
+        (8, 9, "COGS", "=Dashboard_Engine!B5", "=Dashboard_Engine!D5", "Rs. #,##0.0"),
+        (10, 11, "OPEX", "=Dashboard_Engine!B6", "=Dashboard_Engine!D6", "Rs. #,##0.0"),
+        (12, 13, "Gross Profit", "=Dashboard_Engine!B7", "=Dashboard_Engine!D7", "Rs. #,##0.0"),
+        (14, 15, "Net Profit", "=Dashboard_Engine!B8", "=Dashboard_Engine!D8", "Rs. #,##0.0"),
         (16, 17, "ROA", "=Dashboard_Engine!B9", "=Dashboard_Engine!D9", "0.0%"),
         (18, 19, "ROE", "=Dashboard_Engine!B10", "=Dashboard_Engine!D10", "0.0%")
     ]
-    for c_start, c_end, title, val_formula, pct_formula, num_fmt in cards_meta:
+
+    for c_start, c_end, title, val_formula, pct_formula, num_fmt in cards:
         for r in range(1, 6):
             for c in range(c_start, c_end + 1):
                 cell = ws_dash.cell(r, c)
-                cell.fill = card_bg
+                cell.fill = white_fill
                 cell.border = card_border
-        
-        c_title = ws_dash.cell(1, c_start, title)
-        c_title.font = card_title_font
-        c_title.alignment = Alignment(horizontal="center", vertical="center")
-        if c_start != c_end:
-            ws_dash.merge_cells(start_row=1, start_column=c_start, end_row=1, end_column=c_end)
-            
-        c_val = ws_dash.cell(2, c_start, val_formula)
-        c_val.font = card_val_font
-        c_val.number_format = num_fmt
-        c_val.alignment = Alignment(horizontal="center", vertical="center")
-        if c_start != c_end:
-            ws_dash.merge_cells(start_row=2, start_column=c_start, end_row=3, end_column=c_end)
-            
-        c_pct = ws_dash.cell(4, c_start, pct_formula)
-        c_pct.font = card_pct_font
-        c_pct.number_format = "+0.0%;-0.0%;0.0%"
-        c_pct.alignment = Alignment(horizontal="center", vertical="center")
-        if c_start != c_end:
-            ws_dash.merge_cells(start_row=4, start_column=c_start, end_row=4, end_column=c_end)
-            
-        c_sub = ws_dash.cell(5, c_start, "vs Prior Year")
-        c_sub.font = sub_font
-        c_sub.alignment = Alignment(horizontal="center", vertical="center")
-        if c_start != c_end:
-            ws_dash.merge_cells(start_row=5, start_column=c_start, end_row=5, end_column=c_end)
 
-    # ── 4. SIX DYNAMIC CHARTS (Rows 8 to 40) ──
-    # Chart 1: Revenue Growth (Col B, Row 8)
+        ws_dash.merge_cells(start_row=1, start_column=c_start, end_row=1, end_column=c_end)
+        c_t = ws_dash.cell(1, c_start, title)
+        c_t.font = Font(name="Calibri", size=8.5, bold=True, color="595959")
+        c_t.alignment = Alignment(horizontal="center", vertical="center")
+
+        ws_dash.merge_cells(start_row=2, start_column=c_start, end_row=3, end_column=c_end)
+        c_v = ws_dash.cell(2, c_start, val_formula)
+        c_v.font = Font(name="Calibri", size=13, bold=True, color="000000")
+        c_v.number_format = num_fmt
+        c_v.alignment = Alignment(horizontal="center", vertical="center")
+
+        ws_dash.merge_cells(start_row=4, start_column=c_start, end_row=4, end_column=c_end)
+        c_p = ws_dash.cell(4, c_start, pct_formula)
+        c_p.font = Font(name="Calibri", size=9, bold=True, color="385723")
+        c_p.number_format = "+0.0%;-0.0%;0.0%"
+        c_p.alignment = Alignment(horizontal="center", vertical="center")
+
+        ws_dash.merge_cells(start_row=5, start_column=c_start, end_row=5, end_column=c_end)
+        c_s = ws_dash.cell(5, c_start, "VS Pre Year")
+        c_s.font = Font(name="Calibri", size=7.5, color="7F7F7F")
+        c_s.alignment = Alignment(horizontal="center", vertical="center")
+
+    # ── 5. TOP-RIGHT COMPANY METADATA BOX (Cols U to X, Rows 1 to 5) ──
+    for r in range(1, 6):
+        for c in range(21, 25):
+            cell = ws_dash.cell(r, c)
+            cell.fill = tesla_light_green
+            cell.border = card_border
+
+    ws_dash.merge_cells("U1:X1")
+    ws_dash["U1"] = f"{ticker} Share Price Info."
+    ws_dash["U1"].font = Font(name="Calibri", size=9, bold=True, color="385723")
+    ws_dash["U1"].alignment = Alignment(horizontal="center", vertical="center")
+
+    meta = [
+        (2, "Sector - ", sector),
+        (3, "Market Cap - ", f"Rs. {mcap:,.0f} Cr"),
+        (4, "Price - ", f"Rs. {cmp:,.2f}"),
+        (5, "Fair Value - ", f"Rs. {target:,.2f}")
+    ]
+    for r, lbl, val in meta:
+        ws_dash.cell(r, 21, lbl).font = Font(name="Calibri", size=8.5, bold=True, color="385723")
+        ws_dash.cell(r, 21).alignment = Alignment(horizontal="right", vertical="center")
+        ws_dash.merge_cells(start_row=r, start_column=22, end_row=r, end_column=24)
+        c_v = ws_dash.cell(r, 22, val)
+        c_v.font = Font(name="Calibri", size=8.5, bold=True, color="000000")
+        c_v.alignment = Alignment(horizontal="left", vertical="center")
+
+    # ── 6. SIX TESLA GREEN CHARTS (EXACT REPLICA) ──
+    # Chart 1: Revenue Growth Y-o-Y (Cols B to I, Rows 7 to 23)
     c1 = BarChart()
     c1.type = "col"
     c1.style = 10
-    c1.title = "Revenue Growth Y-o-Y (Rs. Cr)"
-    c1.width = 14
-    c1.height = 7.2
-    c1.add_data(Reference(ws_is, min_col=2, min_row=4, max_col=9, max_row=4), titles_from_data=False)
-    c1.set_categories(Reference(ws_is, min_col=2, min_row=3, max_col=9, max_row=3))
-    ws_dash.add_chart(c1, "B8")
-    
-    # Chart 2: Revenue Breakdown by Business Line (Col J, Row 8)
+    c1.title = "Revenue Growth Y-o-Y"
+    c1.width = 15.5
+    c1.height = 7.8
+    c1.legend = None
+    c1.y_axis.title = None
+    c1.x_axis.title = None
+
+    data_c1 = Reference(ws_is, min_col=2, min_row=4, max_col=9, max_row=4)
+    cats_c1 = Reference(ws_is, min_col=2, min_row=3, max_col=9, max_row=3)
+    c1.add_data(data_c1, from_rows=True, titles_from_data=False)
+    c1.set_categories(cats_c1)
+    c1.series[0].graphicalProperties.solidFill = "70AD47" # Tesla Green!
+    ws_dash.add_chart(c1, "B7")
+
+    # Chart 2: Revenue Breakdown by Business Line (Cols J to N, Rows 7 to 23)
     c2 = BarChart()
     c2.type = "bar"
-    c2.style = 11
+    c2.style = 10
     c2.title = "Revenue Breakdown by Business Line"
-    c2.width = 14
-    c2.height = 7.2
+    c2.width = 13.5
+    c2.height = 7.8
+    c2.legend = None
+    c2.y_axis.title = None
+    c2.x_axis.title = None
+
     n_segs = len(sector_info.get("segments", []))
-    c2.add_data(Reference(ws_eng, min_col=2, min_row=14, max_row=14 + n_segs - 1), titles_from_data=False)
-    c2.set_categories(Reference(ws_eng, min_col=1, min_row=14, max_row=14 + n_segs - 1))
-    ws_dash.add_chart(c2, "J8")
-    
-    # Chart 3: Segment Mix Pie (Col O, Row 8)
+    data_c2 = Reference(ws_eng, min_col=2, min_row=14, max_row=14 + n_segs - 1)
+    cats_c2 = Reference(ws_eng, min_col=1, min_row=14, max_row=14 + n_segs - 1)
+    c2.add_data(data_c2, from_rows=False, titles_from_data=False)
+    c2.set_categories(cats_c2)
+    c2.series[0].graphicalProperties.solidFill = "70AD47" # Tesla Green!
+    c2.dataLabels = DataLabelList()
+    c2.dataLabels.showVal = True
+    ws_dash.add_chart(c2, "J7")
+
+    # Chart 3: Revenue Breakup Pie (Cols O to S, Rows 7 to 23)
     c3 = PieChart()
-    c3.title = "Segment Contribution Mix"
-    c3.width = 14
-    c3.height = 7.2
-    c3.add_data(Reference(ws_eng, min_col=2, min_row=14, max_row=14 + n_segs - 1), titles_from_data=False)
-    c3.set_categories(Reference(ws_eng, min_col=1, min_row=14, max_row=14 + n_segs - 1))
-    ws_dash.add_chart(c3, "O8")
-    
-    # Chart 4: Operating Cost & Margin Structure (Col B, Row 24)
+    c3.title = "Revenue Breakup"
+    c3.width = 12.5
+    c3.height = 7.8
+    c3.legend.legendPos = "b"
+
+    data_c3 = Reference(ws_eng, min_col=2, min_row=14, max_row=14 + n_segs - 1)
+    cats_c3 = Reference(ws_eng, min_col=1, min_row=14, max_row=14 + n_segs - 1)
+    c3.add_data(data_c3, from_rows=False, titles_from_data=False)
+    c3.set_categories(cats_c3)
+    c3.dataLabels = DataLabelList()
+    c3.dataLabels.showPercent = True
+    ws_dash.add_chart(c3, "O7")
+
+    # Margin Summary Cards (Cols U to X, Rows 7 to 23)
+    for r in range(7, 23):
+        for c in range(21, 25):
+            ws_dash.cell(r, c).fill = white_fill
+            ws_dash.cell(r, c).border = card_border
+
+    margins_meta = [
+        (8, "Gross Profit Margin", "=Dashboard_Engine!B7/Dashboard_Engine!B4"),
+        (11, "EBITDA Margin", "=INDEX('Income Statement'!$B$10:$I$10, MATCH(Dashboard!E4, 'Income Statement'!$B$3:$I$3, 0))/Dashboard_Engine!B4"),
+        (14, "EBIT Margin", "=Dashboard_Engine!B25/Dashboard_Engine!B4"),
+        (17, "Net Profit Margin", "=Dashboard_Engine!B8/Dashboard_Engine!B4"),
+        (20, "Fair Target Value", f"Rs. {target:,.2f}")
+    ]
+    for r, lbl, f_val in margins_meta:
+        ws_dash.merge_cells(start_row=r, start_column=21, end_row=r, end_column=24)
+        c_l = ws_dash.cell(r, 21, lbl)
+        c_l.font = Font(name="Calibri", size=8.5, bold=True, color="595959")
+        c_l.alignment = Alignment(horizontal="center", vertical="center")
+        
+        ws_dash.merge_cells(start_row=r+1, start_column=21, end_row=r+1, end_column=24)
+        c_m = ws_dash.cell(r+1, 21, f_val)
+        c_m.font = Font(name="Calibri", size=13, bold=True, color="385723")
+        if "Margin" in lbl:
+            c_m.number_format = "0.0%"
+        c_m.alignment = Alignment(horizontal="center", vertical="center")
+
+    # Bottom Charts: Rows 24 to 38
+    # Chart 4: Operating Cost & Margin Structure (Cols B to I, Rows 24 to 38)
     c4 = BarChart()
     c4.type = "col"
-    c4.style = 13
+    c4.style = 10
     c4.title = "Operating Cost & Margin Structure"
-    c4.width = 14
-    c4.height = 7.2
-    c4.add_data(Reference(ws_eng, min_col=2, min_row=21, max_row=26), titles_from_data=False)
-    c4.set_categories(Reference(ws_eng, min_col=1, min_row=21, max_row=26))
+    c4.width = 15.5
+    c4.height = 7.8
+    c4.legend = None
+
+    data_c4 = Reference(ws_eng, min_col=2, min_row=21, max_row=26)
+    cats_c4 = Reference(ws_eng, min_col=1, min_row=21, max_row=26)
+    c4.add_data(data_c4, from_rows=False, titles_from_data=False)
+    c4.set_categories(cats_c4)
+    c4.series[0].graphicalProperties.solidFill = "70AD47"
     ws_dash.add_chart(c4, "B24")
-    
-    # Chart 5: Liquidity Ratios (Col J, Row 24)
+
+    # Chart 5: Trade Cycle Days (Cols J to N, Rows 24 to 38)
     c5 = BarChart()
     c5.type = "col"
-    c5.style = 14
-    c5.title = "Liquidity Ratios"
-    c5.width = 14
-    c5.height = 7.2
-    c5.add_data(Reference(ws_eng, min_col=2, min_row=36, max_row=38), titles_from_data=False)
-    c5.set_categories(Reference(ws_eng, min_col=1, min_row=36, max_row=38))
+    c5.style = 10
+    c5.title = "Trade Cycle Days"
+    c5.width = 13.5
+    c5.height = 7.8
+    c5.legend = None
+
+    data_c5 = Reference(ws_eng, min_col=2, min_row=30, max_row=32)
+    cats_c5 = Reference(ws_eng, min_col=1, min_row=30, max_row=32)
+    c5.add_data(data_c5, from_rows=False, titles_from_data=False)
+    c5.set_categories(cats_c5)
+    c5.series[0].graphicalProperties.solidFill = "70AD47"
+    c5.dataLabels = DataLabelList()
+    c5.dataLabels.showVal = True
     ws_dash.add_chart(c5, "J24")
-    
-    # Chart 6: Unlevered Free Cash Flow (Col O, Row 24)
+
+    # Chart 6: Liquidity Ratios (Cols O to S, Rows 24 to 38)
     c6 = BarChart()
     c6.type = "col"
-    c6.style = 12
-    c6.title = "Unlevered Free Cash Flow (FCFF)"
-    c6.width = 14
-    c6.height = 7.2
-    c6.add_data(Reference(ws_cf, min_col=2, min_row=14, max_col=9, max_row=14), titles_from_data=False)
-    c6.set_categories(Reference(ws_cf, min_col=2, min_row=3, max_col=9, max_row=3))
+    c6.style = 10
+    c6.title = "Liquidity Ratios"
+    c6.width = 12.5
+    c6.height = 7.8
+    c6.legend = None
+
+    data_c6 = Reference(ws_eng, min_col=2, min_row=36, max_row=38)
+    cats_c6 = Reference(ws_eng, min_col=1, min_row=36, max_row=38)
+    c6.add_data(data_c6, from_rows=False, titles_from_data=False)
+    c6.set_categories(cats_c6)
+    c6.series[0].graphicalProperties.solidFill = "70AD47"
+    c6.dataLabels = DataLabelList()
+    c6.dataLabels.showVal = True
     ws_dash.add_chart(c6, "O24")
+
+    # Status Box (Cols U to X, Rows 24 to 38)
+    for r in range(24, 38):
+        for c in range(21, 25):
+            ws_dash.cell(r, c).fill = tesla_light_green
+            ws_dash.cell(r, c).border = card_border
+
+    ws_dash.merge_cells("U25:X26")
+    ws_dash["U25"] = "INVESTMENT STATUS"
+    ws_dash["U25"].font = Font(name="Calibri", size=10, bold=True, color="385723")
+    ws_dash["U25"].alignment = Alignment(horizontal="center", vertical="center")
+
+    ws_dash.merge_cells("U27:X31")
+    ws_dash["U27"] = "BUY" if cmp < target else "HOLD"
+    ws_dash["U27"].font = Font(name="Calibri", size=24, bold=True, color="385723")
+    ws_dash["U27"].alignment = Alignment(horizontal="center", vertical="center")
+
+    mos_pct = ((target - cmp) / cmp) * 100
+    ws_dash.merge_cells("U32:X35")
+    ws_dash["U32"] = f"Upside Potential: +{mos_pct:.1f}%\nTarget: Rs. {target:,.2f}"
+    ws_dash["U32"].font = Font(name="Calibri", size=9, bold=True, color="385723")
+    ws_dash["U32"].alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
 
 
