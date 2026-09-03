@@ -1,3 +1,4 @@
+from openpyxl.chart.label import DataLabelList
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
