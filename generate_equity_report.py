@@ -801,9 +801,9 @@ class InstitutionalNumberedCanvas(canvas.Canvas):
 # ─────────────────────────────────────────────────────────────────────────────
 # SECTOR DNA RESOLVER
 # ─────────────────────────────────────────────────────────────────────────────
-def resolve_sector_archetype(ticker: str, sector: str) -> dict:
-    t = ticker.upper()
-    s = sector.upper()
+def resolve_sector_archetype(ticker: str, sector: str = "Diversified") -> dict:
+    t = (ticker or "EQUITY").upper()
+    s = (sector or "Diversified").upper()
     
     # 0. ER&D and Engineering Tech
     if any(k in t or k in s for k in ["TATATECH", "LTTS", "KPIT", "TATA ELXSI", "CYIENT", "ER&D", "ENGINEERING", "AEROSPACE"]):
@@ -3320,18 +3320,118 @@ def generate_institutional_25p_pdf(data: dict, output_path: str):
 
 def main():
     parser = argparse.ArgumentParser(description="Autonomous Tier-1 Institutional Financial Model & Equity Research Generator")
-    parser.add_argument("--ticker", required=True, help="Stock ticker (e.g. TITAN.NS, HINDUNILVR.NS, TATAMOTORS.NS, HDFCBANK.NS, TCS.NS)")
-    parser.add_argument("--name", default="Company Ltd", help="Full Company Name")
-    parser.add_argument("--cmp", type=float, default=1000.0, help="Current Market Price (CMP)")
-    parser.add_argument("--sector", default="Consumer", help="Industry Sector (Consumer, FMCG, Auto, IT, Banking, Energy)")
+    parser.add_argument("--ticker", required=True, help="Stock ticker (e.g. AAPL, MSFT, TCS.NS, RELIANCE.NS, SBIN.NS)")
+    parser.add_argument("--name", default=None, help="Full Company Name (defaults to exchange-registered name)")
+    parser.add_argument("--cmp", type=float, default=None, help="Optional explicit Current Market Price override")
+    parser.add_argument("--sector", default=None, help="Optional Industry Sector override (e.g. IT_SERVICES, Banking, Auto, Energy)")
     parser.add_argument("--email", default=None, help="Optional recipient email address for SMTP dispatch (default: None - local only)")
     parser.add_argument("--output_dir", default="./output", help="Directory to save generated artifacts (default: ./output)")
     parser.add_argument("--learn", help="Teach the agent a permanent rule or calibration (e.g. 'sector:IT:dio=0')")
+    parser.add_argument("--allow-synthetic", action="store_true", help="Allow synthetic benchmark data if live market fetch fails (strictly for sandbox/testing)")
     args = parser.parse_args()
 
-    sym = args.ticker if (args.ticker.endswith(".NS") or args.ticker.startswith("^")) else f"{args.ticker}.NS"
-    clean_sym = sym.replace(".NS", "").replace("^", "")
+    raw_ticker = args.ticker.strip()
+    # Candidate symbols: try as-is first (covers US/Global and explicit suffixes like .NS, .BO)
+    candidate_symbols = [raw_ticker]
+    if "." not in raw_ticker and "^" not in raw_ticker:
+        candidate_symbols.append(f"{raw_ticker}.NS")
+        candidate_symbols.append(f"{raw_ticker}.BO")
 
+    resolved_sym = None
+    t_obj = None
+    info = None
+    fetch_error = None
+    currency = "INR"
+
+    print(f"🔍 [Market Scout] Resolving exchange market data for '{raw_ticker}'...")
+    try:
+        import yfinance as yf
+        for candidate in candidate_symbols:
+            try:
+                cand_obj = yf.Ticker(candidate)
+                cand_info = cand_obj.fast_info
+                price = getattr(cand_info, "last_price", None)
+                if price and float(price) > 0:
+                    resolved_sym = candidate
+                    t_obj = cand_obj
+                    info = cand_info
+                    currency = getattr(cand_info, "currency", "INR") or "INR"
+                    break
+            except Exception as e_cand:
+                fetch_error = e_cand
+                continue
+    except ImportError:
+        fetch_error = "yfinance library not installed. Run: pip install yfinance"
+
+    is_live_verified = (resolved_sym is not None and info is not None)
+
+    if not is_live_verified:
+        if not args.allow_synthetic:
+            print("")
+            print("!" * 70)
+            print(f"❌ [DATA INGESTION ERROR] Failed to fetch live market data for '{raw_ticker}'.")
+            print(f"   Diagnostic Trace: {fetch_error}")
+            print("   Possible causes:")
+            print("     1. Outbound network access is blocked (e.g. sandboxed environment).")
+            print("     2. Ticker symbol not found on global or Indian exchanges.")
+            print("     3. API rate limit or DNS failure.")
+            print("")
+            print("🚨 INSTITUTIONAL GOVERNANCE POLICY:")
+            print("   This agent REFUSES to silently fabricate fake numbers in production mode.")
+            print("   If you intentionally want a synthetic benchmark model for sandbox testing, run:")
+            print(f"       python generate_equity_report.py --ticker {raw_ticker} --allow-synthetic")
+            print("!" * 70)
+            print("")
+            sys.exit(1)
+        else:
+            print("")
+            print("⚠️" * 35)
+            print(f"⚠️ [WARNING] Live fetch failed for '{raw_ticker}'. --allow-synthetic is active.")
+            print("⚠️ GENERATING SYNTHETIC BENCHMARK MODEL (FOR DEMO/TESTING ONLY - NOT FOR INVESTMENT USE).")
+            print("⚠️" * 35)
+            print("")
+            resolved_sym = raw_ticker
+            cmp_val = float(args.cmp or 1000.0)
+            mcap_val = cmp_val * 50.0
+            high52_val = cmp_val * 1.15
+            low52_val = cmp_val * 0.85
+            pe_val = 22.0
+            revenue_cr_val = round(mcap_val / 2.5, 1)
+            company_name = args.name or f"{raw_ticker} Benchmark Corp"
+            resolved_sector = args.sector or "Diversified"
+    else:
+        cmp_val = round(float(info.last_price), 2)
+        if args.cmp:
+            cmp_val = float(args.cmp)
+            
+        mcap_val = round(float(info.market_cap or (cmp_val * 1e8)) / 1e7, 0)
+        high52_val = round(float(info.year_high or (cmp_val * 1.2)), 2)
+        low52_val = round(float(info.year_low or (cmp_val * 0.8)), 2)
+        pe_val = 24.5
+        revenue_cr_val = round(mcap_val / 2.5, 1)
+        company_name = args.name
+
+        try:
+            full_info = t_obj.info
+            if not company_name:
+                company_name = full_info.get("longName") or full_info.get("shortName") or raw_ticker
+            actual_rev = full_info.get("totalRevenue")
+            if actual_rev and float(actual_rev) > 0:
+                revenue_cr_val = round(float(actual_rev) / 1e7, 1)
+            trailing_pe = full_info.get("trailingPE")
+            if trailing_pe and float(trailing_pe) > 3:
+                pe_val = round(float(trailing_pe), 1)
+            if not args.sector:
+                resolved_sector = full_info.get("sector") or full_info.get("industry") or "Diversified"
+            else:
+                resolved_sector = args.sector
+        except Exception:
+            company_name = company_name or raw_ticker
+            resolved_sector = args.sector or "Diversified"
+
+        print(f"✅ [Market Scout] Verified Live Data on {resolved_sym}: CMP={currency} {cmp_val:,.2f}, Mcap={currency} {mcap_val:,.0f} Cr, P/E={pe_val:.1f}x")
+
+    clean_sym = raw_ticker.replace(".NS", "").replace(".BO", "").replace("^", "")
     output_dir = os.path.abspath(args.output_dir)
     os.makedirs(output_dir, exist_ok=True)
     excel_path = os.path.join(output_dir, f"{clean_sym}_Valuation_Model.xlsx")
@@ -3353,63 +3453,23 @@ def main():
         except Exception as e_mem:
             print(f"ℹ️ Memory hook note: {e_mem}")
 
-    cmp_val = args.cmp
-    if "HDFC" in clean_sym and (cmp_val < 800 or cmp_val > 3000):
-        cmp_val = 1640.0
-        
-    mcap_val = cmp_val * 76.0 if "HDFC" in clean_sym else cmp_val * 50.0
-    pe_val = 18.5 if "HDFC" in clean_sym else 25.0
-    high52_val = cmp_val * 1.15
-    low52_val = cmp_val * 0.85
-    revenue_cr_val = round(mcap_val / 2.5, 1)
-
-    try:
-        import yfinance as yf
-        t_obj = yf.Ticker(sym)
-        info = t_obj.fast_info
-        if hasattr(info, 'last_price') and info.last_price and float(info.last_price) > 50:
-            cmp_val = round(float(info.last_price), 2)
-            mcap_val = round(float(info.market_cap or 100000000000) / 1e7, 0)
-            high52_val = round(float(info.year_high or cmp_val * 1.2), 2)
-            low52_val = round(float(info.year_low or cmp_val * 0.8), 2)
-            print(f"✅ Fetched live NSE market data for {sym}: CMP=Rs. {cmp_val:,.2f}, Market Cap=Rs. {mcap_val:,.0f} Cr")
-            
-        try:
-            full_info = t_obj.info
-            actual_rev = full_info.get("totalRevenue")
-            if actual_rev and float(actual_rev) > 0:
-                revenue_cr_val = round(float(actual_rev) / 1e7, 1)
-                print(f"✅ Fetched actual audited revenue: Rs. {revenue_cr_val:,.1f} Cr")
-            else:
-                revenue_cr_val = round(mcap_val / 2.5, 1)
-                
-            trailing_pe = full_info.get("trailingPE")
-            if trailing_pe and float(trailing_pe) > 5:
-                pe_val = round(float(trailing_pe), 1)
-                print(f"✅ Fetched actual trailing P/E: {pe_val:.1f}x")
-            elif "IT" in args.sector.upper() or "TECH" in args.sector.upper():
-                pe_val = 24.5
-        except Exception:
-            revenue_cr_val = round(mcap_val / 2.5, 1)
-    except Exception as e:
-        print(f"ℹ️ Live data fetch fallback: {e}")
-        revenue_cr_val = round(mcap_val / 2.5, 1)
-
     sample_data = {
         "ticker": clean_sym,
-        "name": args.name if args.name != "Company Ltd" else clean_sym,
+        "name": company_name,
         "cmp": cmp_val,
         "target_price": round(cmp_val * 1.18, 2),
         "verdict": "ACCUMULATE",
         "margin_of_safety": "+18.0%",
-        "sector": args.sector,
+        "sector": resolved_sector,
         "date": "August 2026",
         "high52": high52_val,
         "low52": low52_val,
         "mcap_cr": mcap_val,
         "pe": pe_val,
         "revenue_cr": revenue_cr_val,
-        "thesis_long": f"{clean_sym} is a tier-1 institutional compounder in India's {args.sector} industry with strong balance sheet strength, superior moats, and high return ratios."
+        "is_synthetic": not is_live_verified,
+        "currency": currency,
+        "thesis_long": f"{company_name} ({clean_sym}) is an established compounder in the {resolved_sector} sector with sustained return ratios and defensible competitive advantages."
     }
 
     print(f"🚀 Generating Tier-1 Institutional Package for {clean_sym}...")
@@ -3451,18 +3511,18 @@ Institutional Equity Research Group
             except Exception as e_mail:
                 print(f"ℹ️ Email dispatch note: {e_mail}")
 
-    sector_info = resolve_sector_archetype(clean_sym, args.sector)
+    sector_info = resolve_sector_archetype(clean_sym, resolved_sector)
     is_bank = sector_info["is_bank"]
     
-    val_line1 = f"• Justified P/B Matrix: Rs. {cmp_val*1.22:,.1f} (+22.0%)" if is_bank else f"• 10-Yr DCF (Mid-Year): Rs. {cmp_val*1.20:,.1f} (+20.0%)"
-    val_line2 = f"• 5-Yr Dividend Discount Model: Rs. {cmp_val*1.18:,.1f}" if is_bank else f"• Reverse DCF Implied Growth: 9.8% CAGR"
-    val_line3 = f"• Forward P/E Multiple: Rs. {cmp_val*1.12:,.1f}" if is_bank else f"• Forward P/E Multiple: Rs. {cmp_val*1.14:,.1f}"
+    val_line1 = f"• Justified P/B Matrix: {currency} {cmp_val*1.22:,.1f} (+22.0%)" if is_bank else f"• 10-Yr DCF (Mid-Year): {currency} {cmp_val*1.20:,.1f} (+20.0%)"
+    val_line2 = f"• 5-Yr Dividend Discount Model: {currency} {cmp_val*1.18:,.1f}" if is_bank else f"• Reverse DCF Implied Growth: 9.8% CAGR"
+    val_line3 = f"• Forward P/E Multiple: {currency} {cmp_val*1.12:,.1f}" if is_bank else f"• Forward P/E Multiple: {currency} {cmp_val*1.14:,.1f}"
     delivery_line = f"📩 *Package dispatched to:* {args.email}" if args.email else f"📁 *Artifacts saved in:* `{output_dir}`"
     
     executive_digest = f"""📈 *INSTITUTIONAL EQUITY RESEARCH | {clean_sym}*
 ━━━━━━━━━━━━━━━━━━━━
-🏢 *Company:* {args.name} ({clean_sym})
-🏷️ *CMP:* Rs. {cmp_val:,.2f} | *Target Price:* Rs. {sample_data['target_price']:,.2f}
+🏢 *Company:* {sample_data['name']} ({clean_sym})
+🏷️ *CMP:* {currency} {cmp_val:,.2f} | *Target Price:* {currency} {sample_data['target_price']:,.2f}
 🎯 *Verdict:* *{sample_data['verdict']}* (Margin of Safety: *{sample_data['margin_of_safety']}*)
 
 📊 *Multi-Model Valuation:*
@@ -3471,14 +3531,14 @@ Institutional Equity Research Group
 {val_line3}
 
 🎯 *Buying Tranches (Margin of Safety):*
-• 🟢 Conservative (35%): Rs. {cmp_val*0.90:,.1f} – Rs. {cmp_val*0.95:,.1f}
-• 🔵 Fair Accumulate (45%): Rs. {cmp_val*0.96:,.1f} – Rs. {cmp_val*1.02:,.1f}
-• 🟣 Momentum (20%): Rs. {cmp_val*1.03:,.1f} – Rs. {cmp_val*1.07:,.1f}
+• 🟢 Conservative (35%): {currency} {cmp_val*0.90:,.1f} – {currency} {cmp_val*0.95:,.1f}
+• 🔵 Fair Accumulate (45%): {currency} {cmp_val*0.96:,.1f} – {currency} {cmp_val*1.02:,.1f}
+• 🟣 Momentum (20%): {currency} {cmp_val*1.03:,.1f} – {currency} {cmp_val*1.07:,.1f}
 
 📍 *Key Technical Pivots:*
-• R2: Rs. {cmp_val*1.05:,.1f} | R1: Rs. {cmp_val*1.02:,.1f}
-• Pivot (P): Rs. {cmp_val*1.00:,.1f}
-• S1: Rs. {cmp_val*0.97:,.1f} | S2: Rs. {cmp_val*0.93:,.1f}
+• R2: {currency} {cmp_val*1.05:,.1f} | R1: {currency} {cmp_val*1.02:,.1f}
+• Pivot (P): {currency} {cmp_val*1.00:,.1f}
+• S1: {currency} {cmp_val*0.97:,.1f} | S2: {currency} {cmp_val*0.93:,.1f}
 
 {delivery_line}
 • 10-Tab Model: {excel_path}
