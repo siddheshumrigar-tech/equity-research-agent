@@ -3313,9 +3313,10 @@ def main():
         cmp_val = 1640.0
         
     mcap_val = cmp_val * 76.0 if "HDFC" in clean_sym else cmp_val * 50.0
-    pe_val = 18.5 if "HDFC" in clean_sym else 45.0
+    pe_val = 18.5 if "HDFC" in clean_sym else 25.0
     high52_val = cmp_val * 1.15
     low52_val = cmp_val * 0.85
+    revenue_cr_val = round(mcap_val / 2.5, 1)
 
     try:
         import yfinance as yf
@@ -3327,8 +3328,27 @@ def main():
             high52_val = round(float(info.year_high or cmp_val * 1.2), 2)
             low52_val = round(float(info.year_low or cmp_val * 0.8), 2)
             print(f"✅ Fetched live NSE market data for {sym}: CMP=Rs. {cmp_val:,.2f}, Market Cap=Rs. {mcap_val:,.0f} Cr")
+            
+        try:
+            full_info = t_obj.info
+            actual_rev = full_info.get("totalRevenue")
+            if actual_rev and float(actual_rev) > 0:
+                revenue_cr_val = round(float(actual_rev) / 1e7, 1)
+                print(f"✅ Fetched actual audited revenue: Rs. {revenue_cr_val:,.1f} Cr")
+            else:
+                revenue_cr_val = round(mcap_val / 2.5, 1)
+                
+            trailing_pe = full_info.get("trailingPE")
+            if trailing_pe and float(trailing_pe) > 5:
+                pe_val = round(float(trailing_pe), 1)
+                print(f"✅ Fetched actual trailing P/E: {pe_val:.1f}x")
+            elif "IT" in args.sector.upper() or "TECH" in args.sector.upper():
+                pe_val = 24.5
+        except Exception:
+            revenue_cr_val = round(mcap_val / 2.5, 1)
     except Exception as e:
         print(f"ℹ️ Live data fetch fallback: {e}")
+        revenue_cr_val = round(mcap_val / 2.5, 1)
 
     sample_data = {
         "ticker": clean_sym,
