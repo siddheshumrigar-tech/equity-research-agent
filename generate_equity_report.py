@@ -1,3 +1,4 @@
+from openpyxl.chart.layout import Layout, ManualLayout
 from openpyxl.chart.label import DataLabelList
 from openpyxl.chart.series import DataPoint
 import matplotlib
