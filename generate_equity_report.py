@@ -1389,7 +1389,7 @@ def generate_banking_excel_model(data: dict, output_path: str):
         c_roa.fill = light_gold_fill
         c_roa.number_format = "0.00%"
         
-        ws_cap.cell(16, c, f"='Bank Balance Sheet'!{col_let}9/'Bank Balance Sheet'!{col_let}15").number_format = "0.0x"
+        ws_cap.cell(16, c, f"='Bank Balance Sheet'!{col_let}9/'Bank Balance Sheet'!{col_let}15").number_format = "0.0"
         
         c_roe = ws_cap.cell(17, c, f"={col_let}15*{col_let}16")
         c_roe.font = Font(name="Calibri", size=11, bold=True, color="22543D")
@@ -1463,9 +1463,9 @@ def generate_banking_excel_model(data: dict, output_path: str):
         c_val = ws_ddm.cell(r_idx, 2, f_val)
         c_val.font = Font(name="Calibri", size=11, bold=True, color="1A365D" if r_idx in (17, 19) else "000000")
         if r_idx in (12, 13, 14, 15, 16, 17):
-            c_val.number_format = "Rs. #,##0.0"
+            c_val.number_format = "#,##0.0"
         elif r_idx in (19, 20):
-            c_val.number_format = "Rs. #,##0.00"
+            c_val.number_format = "#,##0.00"
             if r_idx == 19:
                 c_val.fill = light_gold_fill
             else:
@@ -1537,7 +1537,7 @@ def generate_banking_excel_model(data: dict, output_path: str):
         for c_idx, k_val in enumerate(ke_steps, 2):
             cell_p = ws_pb.cell(r_idx, c_idx, f"=MAX(0, (({r_val}-Drivers!$F$22)/({k_val}-Drivers!$F$22))*B8)")
             cell_p.font = bold_font
-            cell_p.number_format = "Rs. #,##0.00"
+            cell_p.number_format = "#,##0.00"
             cell_p.alignment = Alignment(horizontal="right")
             cell_p.border = thin_border
             if r_idx == 17 and c_idx == 4:
@@ -2020,7 +2020,7 @@ def generate_corporate_excel_model(data: dict, output_path: str, sector_info: di
         col_let = get_column_letter(c)
         c_ccc = ws_wc.cell(12, c, f"={col_let}5+{col_let}4-{col_let}6")
         c_ccc.font = Font(name="Calibri", size=11, bold=True, color="22543D")
-        c_ccc.number_format = "0.0 Days"
+        c_ccc.number_format = "0.0"
         c_ccc.fill = green_fill
         
     for r in range(4, 13):
@@ -2389,9 +2389,9 @@ def generate_corporate_excel_model(data: dict, output_path: str, sector_info: di
         c_val = ws_dcf.cell(r_idx, 2, f_val)
         c_val.font = Font(name="Calibri", size=11, bold=True, color="1A365D" if r_idx in (17, 22, 24) else "000000")
         if r_idx in (10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22):
-            c_val.number_format = "Rs. #,##0.0"
+            c_val.number_format = "#,##0.0"
         elif r_idx in (24, 25):
-            c_val.number_format = "Rs. #,##0.00"
+            c_val.number_format = "#,##0.00"
             if r_idx == 24:
                 c_val.fill = light_gold_fill
             else:
@@ -2422,7 +2422,7 @@ def generate_corporate_excel_model(data: dict, output_path: str, sector_info: di
         for c_idx, w_val in enumerate(wacc_steps, 2):
             cell_p = ws_dcf.cell(r_idx, c_idx, f"=(B10+((B11*(1+{g_val}))/({w_val}-{g_val}))*F6+B18+B19+B20+B21)/B23")
             cell_p.font = bold_font
-            cell_p.number_format = "Rs. #,##0.00"
+            cell_p.number_format = "#,##0.00"
             cell_p.alignment = Alignment(horizontal="right")
             cell_p.border = thin_border
             if r_idx == 32 and c_idx == 4:
