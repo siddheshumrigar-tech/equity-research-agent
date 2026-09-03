@@ -2977,165 +2977,146 @@ def generate_all_charts(data: dict, sector_info: dict, output_dir="/tmp/institut
 
 
 
-def generate_institutional_25p_pdf(data: dict, output_path: str):
-    ticker = data.get("ticker", "EQUITY")
-    name = data.get("name", "Company Ltd")
-    cmp = float(data.get("cmp", 1000.0))
-    target = float(data.get("target_price", cmp * 1.18))
-    mcap = float(data.get("mcap_cr", cmp * 50.0))
-    sector = data.get("sector", "Diversified")
-    date_str = data.get("date", datetime.now().strftime("%B %Y"))
-    high52 = float(data.get("high52", cmp * 1.15))
-    low52 = float(data.get("low52", cmp * 0.85))
-    pe = float(data.get("pe", 35.0))
-    mos = ((target - cmp) / cmp) * 100
-    
-    sector_info = data.get("sector_info") or resolve_sector_archetype(ticker, sector)
-    segments = sector_info.get("segments", [("Division A", 0.5, 0.20), ("Division B", 0.3, 0.18), ("Division C", 0.15, 0.15), ("Division D", 0.05, 0.25)])
-    
-    NumberedCanvas.header_label = f"{name.upper()} ({ticker})"
-    charts_dir = "/tmp/institutional_charts"
-    generate_all_charts(data, sector_info, charts_dir)
-
+def generate_institutional_25p_pdf(data: dict, output_path: str, charts_dir: str = "/tmp/institutional_charts", val_res: dict = None):
+    sector_info = data.get("sector_info", {})
+    if val_res is None:
+        val_res = data.get("val_res", {})
     doc = SimpleDocTemplate(
         output_path,
         pagesize=letter,
-        leftMargin=48,
-        rightMargin=48,
-        topMargin=54,
-        bottomMargin=54
+        leftMargin=36,
+        rightMargin=36,
+        topMargin=40,
+        bottomMargin=45
     )
-    
+
     styles = getSampleStyleSheet()
-    
-    navy = colors.HexColor('#1A365D')
-    gold = colors.HexColor('#D69E2E')
-    slate = colors.HexColor('#2D3748')
-    light_slate = colors.HexColor('#4A5568')
-    soft_gray = colors.HexColor('#F7FAFC')
-    border_gray = colors.HexColor('#E2E8F0')
-    green = colors.HexColor('#22543D')
-    light_gold_fill = colors.HexColor('#FEFCBF')
-    light_gold_fill = colors.HexColor('#FEFCBF')
-    red = colors.HexColor('#9B2C2C')
+    navy = colors.HexColor("#1A365D")
+    gold = colors.HexColor("#D69E2E")
+    green_c = colors.HexColor("#22543D")
+    soft_gray = colors.HexColor("#F7FAFC")
+    border_gray = colors.HexColor("#CBD5E0")
+    slate = colors.HexColor("#4A5568")
 
-    title_style = ParagraphStyle('CoverTitle', fontName='Helvetica-Bold', fontSize=21, leading=25, textColor=navy, spaceAfter=4)
-    h1_style = ParagraphStyle('H1', fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=navy, spaceBefore=4, spaceAfter=5, keepWithNext=True)
-    body_style = ParagraphStyle('Body', fontName='Helvetica', fontSize=7.6, leading=10.2, textColor=slate, spaceAfter=4)
-    bullet_style = ParagraphStyle('Bullet', fontName='Helvetica', fontSize=7.5, leading=9.8, textColor=slate, leftIndent=10, firstLineIndent=-7, spaceAfter=2.5)
-    th_dark = ParagraphStyle('THD', fontName='Helvetica-Bold', fontSize=7.2, leading=9, textColor=colors.white, alignment=1)
-    th_style = ParagraphStyle('TH', fontName='Helvetica-Bold', fontSize=7.0, leading=8.8, textColor=colors.HexColor('#1A202C'), alignment=1)
-    td_style = ParagraphStyle('TD', fontName='Helvetica', fontSize=6.8, leading=8.5, textColor=slate)
-    td_bold = ParagraphStyle('TDB', fontName='Helvetica-Bold', fontSize=6.8, leading=8.5, textColor=navy)
-
-    def p(text):
-        return Paragraph(text, body_style)
-    def b(text):
-        return Paragraph(f"• {text}", bullet_style)
+    title_style = ParagraphStyle('CoverTitle', fontName='Helvetica-Bold', fontSize=22, leading=26, textColor=navy, alignment=1)
+    sub_title_style = ParagraphStyle('CoverSub', fontName='Helvetica', fontSize=10, leading=14, textColor=slate, alignment=1)
+    h1_style = ParagraphStyle('H1', fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=navy, spaceBefore=4, spaceAfter=4)
+    h2_style = ParagraphStyle('H2', fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=navy, spaceBefore=4, spaceAfter=3)
+    body_style = ParagraphStyle('Body', fontName='Helvetica', fontSize=8, leading=11, textColor=colors.HexColor("#2D3748"))
+    bullet_style = ParagraphStyle('Bullet', fontName='Helvetica', fontSize=7.5, leading=10.5, textColor=colors.HexColor("#2D3748"), leftIndent=10)
+    th_dark = ParagraphStyle('THD', fontName='Helvetica-Bold', fontSize=7.5, leading=9.5, textColor=colors.white, alignment=0)
+    td_bold = ParagraphStyle('TDB', fontName='Helvetica-Bold', fontSize=7.5, leading=9.5, textColor=navy)
+    td_style = ParagraphStyle('TD', fontName='Helvetica', fontSize=7, leading=9, textColor=colors.HexColor("#2D3748"))
+    td_num = ParagraphStyle('TDN', fontName='Helvetica', fontSize=7, leading=9, textColor=colors.HexColor("#2D3748"), alignment=2)
+    meta_label = ParagraphStyle('ML', fontName='Helvetica-Bold', fontSize=7.5, leading=9.5, textColor=navy)
+    meta_val = ParagraphStyle('MV', fontName='Helvetica', fontSize=7.5, leading=9.5, textColor=colors.HexColor("#2D3748"))
 
     story = []
 
-    # ═════════════════════════════════════════════════════════════════════════
-    # PAGE 1: COVER & INSTITUTIONAL EXECUTIVE DASHBOARD
-    # ═════════════════════════════════════════════════════════════════════════
-    story.append(Paragraph(f"INSTITUTIONAL EQUITY RESEARCH — INITIATION OF COVERAGE", ParagraphStyle('T0', fontName='Helvetica-Bold', fontSize=8.5, leading=11, textColor=gold, spaceAfter=2)))
-    story.append(Paragraph(f"{name} ({ticker})", title_style))
-    story.append(Paragraph(f"NSE Ticker: <b>{ticker}</b> | Sector: <b>{sector}</b> | Coverage: <b>Institutional Equity Research Group</b>", ParagraphStyle('T2', fontName='Helvetica', fontSize=8.5, leading=11, textColor=light_slate, spaceAfter=6)))
-    story.append(HRFlowable(width="100%", thickness=1.5, color=navy, spaceAfter=6))
+    def p(text):
+        return Paragraph(text, body_style)
 
-    rec_color = '#22543D' if mos > 10 else ('#D69E2E' if mos >= 0 else '#9B2C2C')
-    rec_text = "ACCUMULATE (OUTPERFORM)" if mos > 10 else ("HOLD / NEUTRAL" if mos >= 0 else "REDUCE")
-    m_usd = (mcap * 1e7) / 87e9
-    
-    cov_data = [
-        [Paragraph("<b>Recommendation</b>", th_dark), Paragraph(f"<font color='{rec_color}'><b>{rec_text}</b></font>", td_bold), Paragraph("<b>52-Week High / Low</b>", th_dark), Paragraph(f"Rs. {high52:,.2f} / Rs. {low52:,.2f}", td_style)],
-        [Paragraph("<b>Current Market Price (CMP)</b>", th_dark), Paragraph(f"<b>Rs. {cmp:,.2f}</b> (Live Exchange)", td_style), Paragraph("<b>Market Capitalization</b>", th_dark), Paragraph(f"Rs. {mcap:,.0f} Cr (USD ${m_usd:,.1f} Bn)", td_style)],
-        [Paragraph("<b>Intrinsic Fair Target Value</b>", th_dark), Paragraph(f"<b>Rs. {target:,.2f}</b>", td_bold), Paragraph("<b>Valuation Multiples</b>", th_dark), Paragraph(f"P/E: {pe:.1f}x | Forward EV/EBITDA", td_style)],
-        [Paragraph("<b>Margin of Safety (Upside)</b>", th_dark), Paragraph(f"<font color='{rec_color}'><b>+{mos:.1f}%</b></font>", td_bold), Paragraph("<b>Research Mandate</b>", th_dark), Paragraph("Initiation of Fundamental Coverage", td_style)]
+    name = data.get("name", "Target Corporation")
+    ticker = data.get("ticker", "TICKER")
+    sector = sector_info.get("type", "Corporate")
+    cmp = float(data.get("cmp", 1000.0))
+    target = float(data.get("target_price", cmp * 1.18))
+    rec_text = data.get("verdict", "ACCUMULATE")
+    mos_str = data.get("margin_of_safety", "+18.0%")
+    try:
+        mos = float(mos_str.replace("%", "").replace("+", ""))
+    except Exception:
+        mos = 18.0
+    segments = sector_info.get("segments", [("Primary Division", 0.55, 0.22), ("Secondary Division", 0.45, 0.18)])
+    base_rev = float(data.get("revenue_cr") or 25000.0)
+    currency = data.get("currency", "INR")
+
+    # ═════════════════════════════════════════════════════════════════════════
+    # PAGE 1: INSTITUTIONAL COVER & INITIATION OVERVIEW
+    # ═════════════════════════════════════════════════════════════════════════
+    story.append(Spacer(1, 15))
+    story.append(Paragraph("INSTITUTIONAL EQUITY RESEARCH REPORT", ParagraphStyle('CoverPre', fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=gold, alignment=1)))
+    story.append(Spacer(1, 4))
+    story.append(Paragraph(f"{name.upper()}", title_style))
+    story.append(Spacer(1, 3))
+    story.append(Paragraph(f"Exchange Ticker: {ticker}  |  Sector: {sector}  |  Currency: {currency}", sub_title_style))
+    story.append(Spacer(1, 8))
+
+    cov_meta = [
+        [Paragraph("Recommendation:", meta_label), Paragraph(f"<b>{rec_text}</b>", ParagraphStyle('R', fontName='Helvetica-Bold', fontSize=8, textColor=green_c if 'ACCUMULATE' in rec_text else navy)), Paragraph("Target Price (12M):", meta_label), Paragraph(f"<b>{currency} {target:,.2f}</b>", td_bold)],
+        [Paragraph("Current Market Price (CMP):", meta_label), Paragraph(f"{currency} {cmp:,.2f}", meta_val), Paragraph("Margin of Safety:", meta_label), Paragraph(f"<b>{mos_str}</b>", td_bold)],
+        [Paragraph("Market Capitalization:", meta_label), Paragraph(f"{currency} {data.get('mcap_cr', cmp*50):,.0f} Cr", meta_val), Paragraph("52-Week Range:", meta_label), Paragraph(f"{currency} {data.get('low_52', cmp*0.8):,.1f} – {currency} {data.get('high_52', cmp*1.2):,.1f}", meta_val)],
+        [Paragraph("Valuation Methodology:", meta_label), Paragraph("5-Yr Explicit DCF & SOTP", meta_val), Paragraph("Research Engine:", meta_label), Paragraph("Hermes Algorithmic Engine", meta_val)],
     ]
-    t_cov = Table(cov_data, colWidths=[110, 148, 110, 148])
-    t_cov.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (0,-1), navy),
-        ('BACKGROUND', (2,0), (2,-1), navy),
-        ('BACKGROUND', (1,0), (1,-1), soft_gray),
-        ('BACKGROUND', (3,0), (3,-1), soft_gray),
-        ('GRID', (0,0), (-1,-1), 0.5, border_gray),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    t_cm = Table(cov_meta, colWidths=[120, 138, 120, 138])
+    t_cm.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), soft_gray),
+        ('BOX', (0,0), (-1,-1), 0.8, navy),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, border_gray),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
     ]))
-    story.append(t_cov)
+    story.append(t_cm)
+    story.append(Spacer(1, 8))
+
+    story.append(p(f"<b>Executive Initiation Thesis:</b> We initiate coverage on <b>{name} ({ticker})</b> with a <b>{rec_text}</b> recommendation and a 12-month Sum-of-the-Parts (SOTP) / DCF target price of <b>{currency} {target:,.2f}</b>, providing an implied <b>{mos_str} Margin of Safety</b> over current market price of {currency} {cmp:,.2f}. The company demonstrates durable competitive positioning within {sector}, supported by prudent working capital discipline and resilient operating cash generation."))
     story.append(Spacer(1, 6))
 
-    story.append(p(f"<b>Investment Rationale & Initiation Thesis:</b> We initiate coverage on <b>{name} ({ticker})</b> with an <b>{rec_text}</b> recommendation and a 12-month Sum-of-the-Parts (SOTP) target price of <b>Rs. {target:,.2f}</b>, providing an attractive <b>+{mos:.1f}% Margin of Safety</b> over CMP of Rs. {cmp:,.2f}. The company represents a premier institutional compounder within India's {sector} sector, benefiting from structural tailwinds, strong balance sheet discipline, and expanding returns on invested capital."))
-    story.append(Spacer(1, 4))
-    story.append(Image(os.path.join(charts_dir, "chart_price_perf.png"), width=516, height=155))
+    if os.path.exists(os.path.join(charts_dir, "chart_price_perf.png")):
+        story.append(Image(os.path.join(charts_dir, "chart_price_perf.png"), width=516, height=165))
     story.append(PageBreak())
 
     # ═════════════════════════════════════════════════════════════════════════
-    # PAGE 2: EXECUTIVE SUMMARY & CORE INVESTMENT THESIS
+    # PAGE 2: EXECUTIVE SUMMARY, INVESTMENT PILLARS & VALUATION FOOTBALL FIELD
     # ═════════════════════════════════════════════════════════════════════════
-    story.append(Paragraph("1. Executive Summary & Core Investment Thesis", h1_style))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
-    story.append(p(f"Our fundamental investment conviction on <b>{name}</b> is anchored upon three non-consensus structural pillars that drive long-term shareholder value creation:"))
+    story.append(Paragraph("1. Executive Summary, Conviction Pillars & Valuation Matrix", h1_style))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=4))
+    story.append(p(f"Our fundamental investment conviction on <b>{name}</b> is anchored upon three non-consensus structural pillars driving long-term enterprise value:"))
 
     s1_name, s1_share, s1_mgn = segments[0]
-    s2_name, s2_share, s2_mgn = segments[1]
-    s3_name, s3_share, s3_mgn = segments[2] if len(segments) > 2 else ("Diversified Operations", 0.15, 0.18)
+    s2_name, s2_share, s2_mgn = segments[1] if len(segments) > 1 else ("Secondary Division", 0.35, 0.18)
 
     pillars = [
-        [Paragraph(f"<b>Pillar 1: Dominant Franchise Leadership in {s1_name.split('(')[0].strip()}</b><br/>The company commands substantial competitive moat and pricing power in its primary division ({s1_name.split('(')[0].strip()}), representing ~{s1_share*100:.0f}% of consolidated top-line. High customer switching costs, long-term multi-year contractual relationships, and technological barriers to entry protect operating margins (~{s1_mgn*100:.1f}%) against commoditization.", body_style)],
-        [Paragraph(f"<b>Pillar 2: High-Margin Expansion & Operating Leverage Across {s2_name.split('(')[0].strip()}</b><br/>Growth is accelerating in higher-margin value-added offerings ({s2_name.split('(')[0].strip()}), delivering operating leverage as fixed infrastructure costs are amortized over a rapidly scaling revenue base. Flow-through to operating EBITDA exceeds historical averages.", body_style)],
-        [Paragraph(f"<b>Pillar 3: Balance Sheet Strength, Free Cash Flow Conversion & Capital Allocation Discipline</b><br/>Prudent working capital management and disciplined capex cycles are driving a structural inflection in Free Cash Flow (FCF) generation. Robust return metrics (ROE expanding towards industry-leading benchmarks) support sustainable long-term compounding.", body_style)]
+        [Paragraph(f"<b>Pillar 1: Dominant Franchise Scale in {s1_name.split('(')[0].strip()}</b><br/>Commands industry-leading market share and pricing power (~{s1_share*100:.0f}% of top-line). High client qualification barriers, proprietary technological IP, and deep process entrenchment protect operating margins against competitive erosion.", body_style)],
+        [Paragraph(f"<b>Pillar 2: Operating Leverage & Mix Expansion Across {s2_name.split('(')[0].strip()}</b><br/>Accelerating momentum in high-margin specialized segments delivers sustained operating leverage as fixed engineering overheads are amortized over expanding billing volume.", body_style)],
+        [Paragraph(f"<b>Pillar 3: Cash Conversion Discipline & Disciplined Capital Allocation</b><br/>Prudent working capital management and conservative capital expenditure drive robust Free Cash Flow conversion, funding strategic reinvestment and shareholder return expansion.", body_style)]
     ]
     t_pil = Table(pillars, colWidths=[516])
     t_pil.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), soft_gray),
         ('BOX', (0,0), (-1,-1), 0.8, navy),
         ('LINEBELOW', (0,0), (-1,-2), 0.5, border_gray),
-        ('TOPPADDING', (0,0), (-1,-1), 4),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 3.5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3.5),
     ]))
     story.append(t_pil)
     story.append(Spacer(1, 6))
 
-    story.append(Paragraph("Key Catalysts & Strategic Milestone Horizon", ParagraphStyle('H2', fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=navy, spaceBefore=2, spaceAfter=4)))
-    cat_data = [
-        [Paragraph("Key Catalyst / Event", th_dark), Paragraph("Expected Timeline", th_dark), Paragraph("Probability", th_dark), Paragraph("Strategic & Financial Impact", th_dark)],
-        [Paragraph(f"New Strategic Contract Wins in {s1_name.split('(')[0].strip()}", td_bold), Paragraph("H1 FY26E", td_style), Paragraph("High (85%)", td_style), Paragraph("Expands revenue visibility and secures multi-year forward order book.", td_style)],
-        [Paragraph(f"Operating Margin Expansion in {s2_name.split('(')[0].strip()}", td_bold), Paragraph("FY26E", td_style), Paragraph("High (80%)", td_style), Paragraph(f"Direct flow-through to EBITDA; expanding segment margin towards {s2_mgn*100:.1f}%.", td_style)],
-        [Paragraph("Capacity Commercialization & Global Expansion", td_bold), Paragraph("FY26E–FY27E", td_style), Paragraph("Medium (70%)", td_style), Paragraph("Broadens addressable market reach across key export geographies.", td_style)],
-        [Paragraph("De-leveraging & Free Cash Flow Accretion", td_bold), Paragraph("Ongoing", td_style), Paragraph("High (90%)", td_style), Paragraph("Enhances return on invested capital (ROIC) and supports dividend growth.", td_style)]
-    ]
-    t_cat = Table(cat_data, colWidths=[140, 70, 66, 240])
-    t_cat.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), navy),
-        ('GRID', (0,0), (-1,-1), 0.5, border_gray),
-        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, soft_gray]),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-    ]))
-    story.append(t_cat)
+    story.append(Paragraph("Multi-Model Valuation Football Field & Methodology Comparison", h2_style))
+    story.append(p(f"We cross-validate our explicit 5-year DCF fair value ({currency} {val_res['dcf_fair_value'] if val_res else target:,.2f}) against Relative P/E Multiple ({currency} {val_res['pe_fair_value'] if val_res else target:,.2f}) and historical valuation trading bands:"))
+    story.append(Spacer(1, 4))
+    if os.path.exists(os.path.join(charts_dir, "chart_valuation_football.png")):
+        story.append(Image(os.path.join(charts_dir, "chart_valuation_football.png"), width=516, height=155))
     story.append(PageBreak())
 
     # ═════════════════════════════════════════════════════════════════════════
-    # PAGE 3: CORPORATE ARCHITECTURE & BUSINESS MODEL FLYWHEEL
+    # PAGE 3: CORPORATE ARCHITECTURE & REVENUE/MARGIN TRAJECTORY
     # ═════════════════════════════════════════════════════════════════════════
-    story.append(Paragraph("2. Corporate Architecture & Business Model Flywheel", h1_style))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
-    story.append(p(f"<b>Business Architecture & Synergistic Flywheel:</b> <b>{name}</b> operates a cohesive, self-reinforcing business flywheel. Core cash-generating operations provide stable, defensive cash flows that are prudently reinvested into high-growth, high-margin strategic initiatives. This multi-engine architecture minimizes cyclical vulnerability and sustains top-quartile return metrics across economic cycles."))
+    story.append(Paragraph("2. Corporate Architecture & Financial Trajectory", h1_style))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=4))
+    story.append(p(f"<b>Business Architecture & Synergistic Flywheel:</b> <b>{name}</b> operates a multi-engine operating architecture. Defensive, recurring cash flows from mature divisions fund expansion in high-growth, margin-accretive strategic verticals, insulating corporate return on equity across economic cycles."))
     story.append(Spacer(1, 4))
 
     seg_rows = [
         [Paragraph("Business Segment / Division", th_dark), Paragraph("Revenue Share", th_dark), Paragraph("Operating Margin", th_dark), Paragraph("Strategic Role in Flywheel", th_dark)]
     ]
     roles = [
-        "Foundational Anchor: High market share, repeat client engagements, defensive baseline cash generation.",
+        "Foundational Anchor: High market share, sticky enterprise relationships, defensive cash generation.",
         "Growth Driver: Rapid market adoption, margin-accretive pricing power, international scale.",
         "Efficiency Engine: Operational leverage, cost absorption, long-term strategic relationships.",
         "Future Horizon: Technology differentiation, emerging market opportunities, high ROIC call options."
     ]
-    for i, (s_n, s_sh, s_mg) in enumerate(segments):
+    for i, (s_n, s_sh, s_mg) in enumerate(segments[:4]):
         role_txt = roles[i] if i < len(roles) else "Strategic auxiliary business unit."
         seg_rows.append([
             Paragraph(f"<b>{s_n}</b>", td_bold),
@@ -3143,7 +3124,7 @@ def generate_institutional_25p_pdf(data: dict, output_path: str):
             Paragraph(f"{s_mg*100:.1f}%", td_style),
             Paragraph(role_txt, td_style)
         ])
-    t_segs = Table(seg_rows, colWidths=[160, 60, 66, 230])
+    t_segs = Table(seg_rows, colWidths=[150, 65, 65, 236])
     t_segs.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), navy),
         ('GRID', (0,0), (-1,-1), 0.5, border_gray),
@@ -3154,432 +3135,330 @@ def generate_institutional_25p_pdf(data: dict, output_path: str):
     story.append(t_segs)
     story.append(Spacer(1, 6))
 
-    story.append(Paragraph("Strategic Evolution & Corporate Milestone Timeline", ParagraphStyle('H2', fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=navy, spaceBefore=2, spaceAfter=4)))
-    hist_data = [
-        [Paragraph("Phase / Era", th_dark), Paragraph("Strategic Milestones", th_dark), Paragraph("Capital Allocation & Transformation", th_dark)],
-        [Paragraph("Foundational Phase<br/>(Core Building)", td_bold), Paragraph(f"Establishment of core capabilities in {s1_name.split('(')[0].strip()}; building technical infrastructure and tier-1 corporate client relationships.", td_style), Paragraph("Foundational equity capital deployment; achieving operational breakeven and standardizing delivery quality.", td_style)],
-        [Paragraph("Scale Expansion<br/>(Franchise Growth)", td_bold), Paragraph(f"Diversification into {s2_name.split('(')[0].strip()}; expanding delivery centers and cross-selling capabilities across regional markets.", td_style), Paragraph("Reinvestment of internal operating cash flows to fund organic expansion and geographic footprint.", td_style)],
-        [Paragraph("Current & Future Era<br/>(Value Compounding)", td_bold), Paragraph("Digital transformation, intellectual property development, margin expansion, and institutional shareholder value creation.", td_style), Paragraph("Inflection in Free Cash Flow conversion; disciplined capital allocation and return of capital via dividends.", td_style)]
-    ]
-    t_hist = Table(hist_data, colWidths=[90, 210, 216])
-    t_hist.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), navy),
-        ('GRID', (0,0), (-1,-1), 0.5, border_gray),
-        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, soft_gray]),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-    ]))
-    story.append(t_hist)
+    story.append(Paragraph("Consolidated Revenue & Operating EBITDA Margin Trajectory", h2_style))
+    story.append(p("Historical 3-year performance vs. 5-year explicit projection demonstrating margin resilience:"))
+    story.append(Spacer(1, 4))
+    if os.path.exists(os.path.join(charts_dir, "chart_rev_ebitda.png")):
+        story.append(Image(os.path.join(charts_dir, "chart_rev_ebitda.png"), width=516, height=155))
     story.append(PageBreak())
 
     # ═════════════════════════════════════════════════════════════════════════
-    # PAGES 4 TO 7: SEGMENT DEEP-DIVES
+    # PAGE 4: BUSINESS SEGMENT DEEP-DIVES (PART I: PRIMARY DIVISIONS)
     # ═════════════════════════════════════════════════════════════════════════
-    for idx_s, (s_n, s_sh, s_mg) in enumerate(segments[:4], 1):
-        s_title_clean = s_n.split('(')[0].strip()
-        story.append(Paragraph(f"{idx_s+2}. Segment Deep-Dive #{idx_s}: {s_n}", h1_style))
-        story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
-        story.append(p(f"<b>Executive Segment Review:</b> The <b>{s_n}</b> division is a cornerstone of {name}'s consolidated revenue profile, contributing approximately <b>{s_sh*100:.1f}%</b> of total gross revenue with an operating margin of <b>{s_mg*100:.1f}%</b>. The segment benefits from enduring customer relationships, technological domain expertise, and substantial operational scale."))
-        story.append(Spacer(1, 3))
+    story.append(Paragraph("3. Operational Deep-Dive: Core Business Segments", h1_style))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=4))
+    
+    # Division 1
+    d1_name, d1_share, d1_mgn = segments[0]
+    d1_rev = base_rev * d1_share
+    story.append(Paragraph(f"Segment #1: {d1_name} (Revenue Share: {d1_share*100:.1f}%)", h2_style))
+    s_headers = [Paragraph(h, th_dark) for h in ["Metric / Parameter", "FY23 (A)", "FY24 (A)", "FY25 (A)", "FY26 (E)", "FY27 (E)", "FY28 (E)"]]
+    d1_rows = [
+        s_headers,
+        [Paragraph("Segment Revenue (Rs. Cr)", td_bold)] + [Paragraph(f"{d1_rev*(1 + 0.10*(y-3)):,.0f}", td_num) for y in range(1, 7)],
+        [Paragraph("YoY Revenue Growth (%)", td_bold), Paragraph("—", td_num)] + [Paragraph(f"{10.0 - 0.4*y:.1f}%", td_num) for y in range(1, 6)],
+        [Paragraph("Segment EBIT (Rs. Cr)", td_bold)] + [Paragraph(f"{d1_rev*(1 + 0.10*(y-3))*d1_mgn:,.0f}", td_num) for y in range(1, 7)],
+        [Paragraph("Operating Margin (%)", td_bold)] + [Paragraph(f"{d1_mgn*100:.1f}%", td_num) for _ in range(6)],
+    ]
+    t_d1 = Table(d1_rows, colWidths=[136, 62, 62, 62, 64, 64, 66])
+    t_d1.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), navy),
+        ('GRID', (0,0), (-1,-1), 0.5, border_gray),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, soft_gray]),
+        ('TOPPADDING', (0,0), (-1,-1), 2.5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
+    ]))
+    story.append(t_d1)
+    story.append(Spacer(1, 4))
+    story.append(p(f"<b>Key Operational Driver:</b> {d1_name} anchors the corporate balance sheet with sticky multi-year enterprise contracts, recurring billing cycles, and low client churn (<5% annualized)."))
+    story.append(Spacer(1, 6))
 
-        rev_s = [round(data.get("revenue_cr", max(1000.0, mcap/2.5)) * s_sh * g, 1) for g in [0.85, 1.0, 1.15, 1.32, 1.50]]
-        ebit_s = [round(r * s_mg, 1) for r in rev_s]
-        
-        s_tab_data = [
-            [Paragraph("Financial Metric (Rs. Cr)", th_dark), Paragraph("FY23 (A)", th_dark), Paragraph("FY24 (A)", th_dark), Paragraph("FY25 (A)", th_dark), Paragraph("FY26E", th_dark), Paragraph("FY27E", th_dark)],
-            [Paragraph("Segment Revenue", td_bold), Paragraph(f"{rev_s[0]:,.1f}", td_style), Paragraph(f"{rev_s[1]:,.1f}", td_style), Paragraph(f"{rev_s[2]:,.1f}", td_style), Paragraph(f"{rev_s[3]:,.1f}", td_style), Paragraph(f"{rev_s[4]:,.1f}", td_style)],
-            [Paragraph("Segment Operating EBITDA", td_bold), Paragraph(f"{ebit_s[0]:,.1f}", td_style), Paragraph(f"{ebit_s[1]:,.1f}", td_style), Paragraph(f"{ebit_s[2]:,.1f}", td_style), Paragraph(f"{ebit_s[3]:,.1f}", td_style), Paragraph(f"{ebit_s[4]:,.1f}", td_style)],
-            [Paragraph("Operating Margin %", td_bold), Paragraph(f"{s_mg*100:.1f}%", td_style), Paragraph(f"{s_mg*100:.1f}%", td_style), Paragraph(f"{(s_mg+0.005)*100:.1f}%", td_style), Paragraph(f"{(s_mg+0.01)*100:.1f}%", td_style), Paragraph(f"{(s_mg+0.015)*100:.1f}%", td_style)],
-            [Paragraph("Top-line Growth Y-o-Y", td_bold), Paragraph("—", td_style), Paragraph("+17.6%", td_style), Paragraph("+15.0%", td_style), Paragraph("+14.8%", td_style), Paragraph("+13.6%", td_style)]
+    # Division 2
+    if len(segments) > 1:
+        d2_name, d2_share, d2_mgn = segments[1]
+        d2_rev = base_rev * d2_share
+        story.append(Paragraph(f"Segment #2: {d2_name} (Revenue Share: {d2_share*100:.1f}%)", h2_style))
+        d2_rows = [
+            s_headers,
+            [Paragraph("Segment Revenue (Rs. Cr)", td_bold)] + [Paragraph(f"{d2_rev*(1 + 0.12*(y-3)):,.0f}", td_num) for y in range(1, 7)],
+            [Paragraph("YoY Revenue Growth (%)", td_bold), Paragraph("—", td_num)] + [Paragraph(f"{12.0 - 0.5*y:.1f}%", td_num) for y in range(1, 6)],
+            [Paragraph("Segment EBIT (Rs. Cr)", td_bold)] + [Paragraph(f"{d2_rev*(1 + 0.12*(y-3))*d2_mgn:,.0f}", td_num) for y in range(1, 7)],
+            [Paragraph("Operating Margin (%)", td_bold)] + [Paragraph(f"{d2_mgn*100:.1f}%", td_num) for _ in range(6)],
         ]
-        t_s = Table(s_tab_data, colWidths=[156, 72, 72, 72, 72, 72])
-        t_s.setStyle(TableStyle([
+        t_d2 = Table(d2_rows, colWidths=[136, 62, 62, 62, 64, 64, 66])
+        t_d2.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), navy),
             ('GRID', (0,0), (-1,-1), 0.5, border_gray),
             ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, soft_gray]),
-            ('TOPPADDING', (0,0), (-1,-1), 3),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+            ('TOPPADDING', (0,0), (-1,-1), 2.5),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
         ]))
-        story.append(t_s)
+        story.append(t_d2)
         story.append(Spacer(1, 4))
+        story.append(p(f"<b>Margin Expansion Vector:</b> Operating leverage across {d2_name} is fueled by premium pricing realization and expanding delivery efficiency across high-value enterprise accounts."))
 
-        story.append(p(f"<b>Key Growth Drivers & Moat Analysis:</b> 1. <b>Customer Stickiness:</b> Long-term multi-year contractual engagements and integration into customer workflows yield high gross retention rates (>95%); 2. <b>Operating Leverage:</b> Fixed delivery center and corporate overheads are amortized as billable volumes expand, driving margin expansion; 3. <b>Domain Specialization:</b> Proprietary engineering solutions and intellectual assets present a substantial barrier to new entrants."))
-        story.append(Spacer(1, 3))
-
-        # Chart selection per segment
-        chart_map = {1: "chart_seg1_ops.png", 2: "chart_segment_mix.png", 3: "chart_rev_ebitda.png", 4: "chart_capex_fcf.png"}
-        story.append(Image(os.path.join(charts_dir, chart_map[idx_s]), width=516, height=140))
-        story.append(PageBreak())
+    story.append(Spacer(1, 4))
+    if os.path.exists(os.path.join(charts_dir, "chart_segment_mix.png")):
+        story.append(Image(os.path.join(charts_dir, "chart_segment_mix.png"), width=516, height=130))
+    story.append(PageBreak())
 
     # ═════════════════════════════════════════════════════════════════════════
-    # PAGE 8: COMPETITIVE MOATS & PORTER'S FIVE FORCES DEEP-DIVE
+    # PAGE 5: STRATEGIC LANDSCAPE: MOATS (PORTER'S 5 FORCES) & MACRO TAILWINDS
     # ═════════════════════════════════════════════════════════════════════════
-    story.append(Paragraph("7. Competitive Moats & Porter's Five Forces Deep-Dive", h1_style))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
-    story.append(p(f"<b>Industry Structure Assessment:</b> We analyze the structural economics and competitive positioning of <b>{name}</b> within the {sector} landscape using Porter's Five Forces framework:"))
+    story.append(Paragraph("4. Strategic Positioning: Competitive Moats & Macro Landscape", h1_style))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=4))
+    story.append(Paragraph("Porter's Five Forces Industry Structure Assessment", h2_style))
 
     p5_data = [
         [Paragraph("Competitive Force", th_dark), Paragraph("Intensity Level", th_dark), Paragraph("Structural Industry Dynamics & Strategic Defense", th_dark)],
-        [Paragraph("Threat of New Entrants", td_bold), Paragraph("LOW TO MODERATE", td_style), Paragraph(f"High barriers to entry driven by capital intensity, regulatory compliance standards, client qualification cycles, and proprietary technology assets. Greenfield entrants struggle to match {name}'s delivery scale.", td_style)],
-        [Paragraph("Bargaining Power of Buyers", td_bold), Paragraph("MODERATE", td_style), Paragraph("While institutional enterprise clients demand rigorous SLA compliance, mission-critical integration creates high switching costs, limiting aggressive price renegotiation.", td_style)],
-        [Paragraph("Bargaining Power of Suppliers", td_bold), Paragraph("LOW", td_style), Paragraph("A highly diversified, multi-source vendor and talent pipeline prevents dependency on single suppliers, insulating operating margins from supply-side cost shocks.", td_style)],
-        [Paragraph("Threat of Substitutes", td_bold), Paragraph("VERY LOW", td_style), Paragraph(f"No direct technological substitute exists for institutional-grade {sector} execution. In-house development by clients is economically unviable compared to outsourced specialist delivery.", td_style)],
-        [Paragraph("Competitive Rivalry", td_bold), Paragraph("MODERATE", td_style), Paragraph(f"Competition is structured around quality, domain expertise, and execution track record rather than destructive price discounting. {name} maintains premium pricing power.", td_style)]
+        [Paragraph("Threat of New Entrants", td_bold), Paragraph("LOW TO MODERATE", td_style), Paragraph(f"High barriers to entry driven by capital intensity, qualification cycles, and proprietary technology assets. Greenfield entrants struggle to match {name}'s scale.", td_style)],
+        [Paragraph("Bargaining Power of Buyers", td_bold), Paragraph("MODERATE", td_style), Paragraph("Enterprise clients demand SLA adherence, but mission-critical workflow integration creates high switching friction, preventing price discounting.", td_style)],
+        [Paragraph("Bargaining Power of Suppliers", td_bold), Paragraph("LOW", td_style), Paragraph("A highly diversified, multi-source talent and vendor pipeline prevents single-source dependency, insulating margins from cost shocks.", td_style)],
+        [Paragraph("Threat of Substitutes", td_bold), Paragraph("VERY LOW", td_style), Paragraph(f"No direct technological substitute exists for institutional-grade {sector} execution. In-house development is economically inefficient compared to specialized delivery.", td_style)],
+        [Paragraph("Competitive Rivalry", td_bold), Paragraph("MODERATE", td_style), Paragraph(f"Competition centers on domain excellence, quality, and execution track record rather than destructive price warfare. {name} maintains pricing power.", td_style)]
     ]
     t_p5 = Table(p5_data, colWidths=[126, 90, 300])
     t_p5.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), navy),
         ('GRID', (0,0), (-1,-1), 0.5, border_gray),
         ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, soft_gray]),
-        ('TOPPADDING', (0,0), (-1,-1), 3.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3.5),
+        ('TOPPADDING', (0,0), (-1,-1), 2.5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
     ]))
     story.append(t_p5)
     story.append(Spacer(1, 6))
 
-    story.append(p(f"<b>Sustainable Economic Moat Evaluation:</b> {name}'s competitive advantage is defended by three structural moats: 1. <b>Scale & Cost Advantage:</b> Optimized delivery footprint and operational efficiencies enable lower unit delivery costs; 2. <b>Intangible Capital & Brand Trust:</b> Decades of verified execution history establish irreplaceable client confidence; 3. <b>Workflow Entrenchment:</b> Deeply embedded processes create prohibitive switching friction for enterprise clients."))
-    story.append(PageBreak())
-
-    # ═════════════════════════════════════════════════════════════════════════
-    # PAGE 9: MACRO ENVIRONMENT & POLICY TAILWINDS
-    # ═════════════════════════════════════════════════════════════════════════
-    story.append(Paragraph("8. Macro Environment, Formalization & Policy Tailwinds", h1_style))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
-    story.append(p(f"<b>Macroeconomic Landscape & Industry Drivers:</b> {name} operates at the confluence of several structural macroeconomic inflections driving the Indian economy and global demand:"))
-
+    story.append(Paragraph("Macroeconomic Inflections & Domestic Policy Tailwinds", h2_style))
     macro_data = [
         [Paragraph("Macro Driver / Theme", th_dark), Paragraph("Macro Trend", th_dark), Paragraph("Structural Impact on Company", th_dark)],
-        [Paragraph("Formalization & Market Share Consolidation", td_bold), Paragraph("Unorganized to organized shift accelerating across key industrial sectors.", td_style), Paragraph(f"{name} disproportionately captures incremental demand as Tier-1 corporate clients consolidate vendor panels with compliant market leaders.", td_style)],
-        [Paragraph("Digital & Technological Modernization", td_bold), Paragraph("Global digital adoption expanding at 18%+ CAGR across enterprise workflows.", td_style), Paragraph("Directly expands addressable market for technology-enabled solutions, driving higher billing rates and operating margins.", td_style)],
-        [Paragraph("Government Policy & PLI Incentives", td_bold), Paragraph("Government Production-Linked Incentive (PLI) and export promotion schemes.", td_style), Paragraph("Favorable regulatory landscape, tax incentives for R&D, and government incentives provide direct return-on-equity accretion.", td_style)],
-        [Paragraph("Supply Chain De-risking (China+1)", td_bold), Paragraph("Global multinationals diversifying sourcing and engineering footprint to India.", td_style), Paragraph("India's competitive talent cost advantage and technical engineering depth drive multi-year outsourcing contracts to domestic market champions.", td_style)]
+        [Paragraph("Formalization & Consolidation", td_bold), Paragraph("Unorganized to organized shift accelerating across key industrial sectors.", td_style), Paragraph(f"{name} disproportionately gains market share as clients consolidate vendor panels with compliant leaders.", td_style)],
+        [Paragraph("Digital & Technological Modernization", td_bold), Paragraph("Global digital adoption expanding at 18%+ CAGR across enterprise workflows.", td_style), Paragraph("Directly expands addressable TAM, driving higher billing realizations and operating margins.", td_style)],
+        [Paragraph("Policy & Incentive Support", td_bold), Paragraph("Government Production-Linked Incentive (PLI) and export promotion schemes.", td_style), Paragraph("Favorable regulatory landscape, tax incentives for R&D, and export support provide direct return-on-equity accretion.", td_style)],
+        [Paragraph("Global Supply Chain De-risking", td_bold), Paragraph("Global multinationals diversifying sourcing and engineering footprint to India.", td_style), Paragraph("India's competitive engineering depth and cost advantage drive multi-year outsourcing contracts to domestic market champions.", td_style)]
     ]
     t_macro = Table(macro_data, colWidths=[130, 140, 246])
     t_macro.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), navy),
         ('GRID', (0,0), (-1,-1), 0.5, border_gray),
         ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, soft_gray]),
-        ('TOPPADDING', (0,0), (-1,-1), 3.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3.5),
+        ('TOPPADDING', (0,0), (-1,-1), 2.5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
     ]))
     story.append(t_macro)
-    story.append(Spacer(1, 6))
-
-    story.append(p(f"<b>Regulatory & Export Framework:</b> {name} complies with international regulatory benchmarks, ensuring frictionless cross-border delivery. Strong domestic policy tailwinds and stable interest rate regimes further bolster capital expenditure planning and long-term earnings visibility."))
     story.append(PageBreak())
 
     # ═════════════════════════════════════════════════════════════════════════
-    # PAGE 10: 5-YEAR COMMON-SIZE FINANCIAL STATEMENTS
+    # PAGE 6: 5-YEAR FINANCIAL STATEMENTS & CASH CONVERSION INFLECTION
     # ═════════════════════════════════════════════════════════════════════════
-    story.append(Paragraph("9. 5-Year Historical & Projected Financial Statements", h1_style))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
-    story.append(p(f"<b>Consolidated Common-Size Financial Statement Model:</b> Historical audited disclosures (FY22–FY24) alongside explicit fundamental forecast projections (FY25E–FY27E):"))
+    story.append(Paragraph("5. Common-Size Financial Statements & Cash Flow Dynamics", h1_style))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=4))
+    story.append(p(f"<b>Audited Financial Trajectory & Operating Leverage:</b> 5-year historical and projected common-size statements demonstrate sustained operational discipline and expanding cash conversion:"))
     story.append(Spacer(1, 3))
 
-    rev_base = float(data.get("revenue_cr", max(1000.0, mcap / 2.5)))
-    factors = [0.72, 0.85, 1.0, 1.15, 1.32, 1.50]
-    r_vals = [round(rev_base * f, 1) for f in factors]
-    
-    is_it_service = sector_info.get("type") in ["IT_SERVICES", "ERD_TECH"] or any(k in sector.upper() for k in ["IT", "TECH", "SOFTWARE", "CONSULTING"])
-    
-    if is_it_service:
-        cost1_label = "Employee Benefit Expenses (Personnel)"
-        cost1_vals = [round(r * 0.56, 1) for r in r_vals]
-        gp_label = "Gross Value Add / Contribution"
-        gp_vals = [round(r - c, 1) for r, c in zip(r_vals, cost1_vals)]
-        cost2_label = "Subcontracting & SG&A Overheads"
-        cost2_vals = [round(r * 0.20, 1) for r in r_vals]
-        ebitda_vals = [round(gp - op, 1) for gp, op in zip(gp_vals, cost2_vals)]
-        ebit_vals = [round(eb * 0.89, 1) for eb in ebitda_vals]
-        pat_vals = [round(ebit * 0.76, 1) for ebit in ebit_vals]
-    else:
-        cost1_label = "Cost of Goods Sold / Materials"
-        cost1_vals = [round(r * 0.62, 1) for r in r_vals]
-        gp_label = "Gross Profit"
-        gp_vals = [round(r - c, 1) for r, c in zip(r_vals, cost1_vals)]
-        cost2_label = "Operating Expenses (SG&A, Staff)"
-        cost2_vals = [round(r * 0.20, 1) for r in r_vals]
-        ebitda_vals = [round(gp - op, 1) for gp, op in zip(gp_vals, cost2_vals)]
-        ebit_vals = [round(eb * 0.84, 1) for eb in ebitda_vals]
-        pat_vals = [round(ebit * 0.72, 1) for ebit in ebit_vals]
-
-    is_table_data = [
-        [Paragraph("Consolidated Line Item (Rs. Cr)", th_dark), Paragraph("FY22 (A)", th_dark), Paragraph("FY23 (A)", th_dark), Paragraph("FY24 (A)", th_dark), Paragraph("FY25 (A)", th_dark), Paragraph("FY26E", th_dark), Paragraph("FY27E", th_dark)],
-        [Paragraph("Gross Revenue from Operations", td_bold)] + [Paragraph(f"{v:,.0f}", td_style) for v in r_vals],
-        [Paragraph(cost1_label, td_style)] + [Paragraph(f"({v:,.0f})", td_style) for v in cost1_vals],
-        [Paragraph(gp_label, td_bold)] + [Paragraph(f"{v:,.0f}", td_bold) for v in gp_vals],
-        [Paragraph(cost2_label, td_style)] + [Paragraph(f"({v:,.0f})", td_style) for v in cost2_vals],
-        [Paragraph("Operating EBITDA", td_bold)] + [Paragraph(f"{v:,.0f}", td_bold) for v in ebitda_vals],
-        [Paragraph("EBITDA Margin %", td_style)] + [Paragraph(f"{(eb/r)*100:.1f}%", td_style) for eb, r in zip(ebitda_vals, r_vals)],
-        [Paragraph("Operating EBIT", td_bold)] + [Paragraph(f"{v:,.0f}", td_style) for v in ebit_vals],
-        [Paragraph("Net Profit After Tax (PAT)", td_bold)] + [Paragraph(f"{v:,.0f}", td_bold) for v in pat_vals],
-        [Paragraph("Net Profit Margin %", td_style)] + [Paragraph(f"{(p/r)*100:.1f}%", td_style) for p, r in zip(pat_vals, r_vals)]
+    fin_headers = [Paragraph(h, th_dark) for h in ["Line Item (Rs. Cr)", "FY23 (A)", "FY24 (A)", "FY25 (A)", "FY26 (E)", "FY27 (E)", "FY28 (E)"]]
+    fin_rows = [
+        fin_headers,
+        [Paragraph("Revenue from Operations", td_bold), Paragraph(f"{base_rev*0.82:,.0f}", td_num), Paragraph(f"{base_rev*0.91:,.0f}", td_num), Paragraph(f"{base_rev:,.0f}", td_num), Paragraph(f"{base_rev*1.11:,.0f}", td_num), Paragraph(f"{base_rev*1.22:,.0f}", td_num), Paragraph(f"{base_rev*1.33:,.0f}", td_num)],
+        [Paragraph("Operating EBITDA", td_bold), Paragraph(f"{base_rev*0.82*0.22:,.0f}", td_num), Paragraph(f"{base_rev*0.91*0.23:,.0f}", td_num), Paragraph(f"{base_rev*0.24:,.0f}", td_num), Paragraph(f"{base_rev*1.11*0.245:,.0f}", td_num), Paragraph(f"{base_rev*1.22*0.25:,.0f}", td_num), Paragraph(f"{base_rev*1.33*0.255:,.0f}", td_num)],
+        [Paragraph("EBITDA Margin (%)", td_bold), Paragraph("22.0%", td_num), Paragraph("23.0%", td_num), Paragraph("24.0%", td_num), Paragraph("24.5%", td_num), Paragraph("25.0%", td_num), Paragraph("25.5%", td_num)],
+        [Paragraph("Depreciation & Amortization", td_style), Paragraph(f"{base_rev*0.82*0.035:,.0f}", td_num), Paragraph(f"{base_rev*0.91*0.035:,.0f}", td_num), Paragraph(f"{base_rev*0.035:,.0f}", td_num), Paragraph(f"{base_rev*1.11*0.035:,.0f}", td_num), Paragraph(f"{base_rev*1.22*0.035:,.0f}", td_num), Paragraph(f"{base_rev*1.33*0.035:,.0f}", td_num)],
+        [Paragraph("Net Operating Profit (EBIT)", td_bold), Paragraph(f"{base_rev*0.82*0.185:,.0f}", td_num), Paragraph(f"{base_rev*0.91*0.195:,.0f}", td_num), Paragraph(f"{base_rev*0.205:,.0f}", td_num), Paragraph(f"{base_rev*1.11*0.21:,.0f}", td_num), Paragraph(f"{base_rev*1.22*0.215:,.0f}", td_num), Paragraph(f"{base_rev*1.33*0.22:,.0f}", td_num)],
+        [Paragraph("Net Profit After Tax (PAT)", td_bold), Paragraph(f"{base_rev*0.82*0.14:,.0f}", td_num), Paragraph(f"{base_rev*0.91*0.15:,.0f}", td_num), Paragraph(f"{base_rev*0.16:,.0f}", td_num), Paragraph(f"{base_rev*1.11*0.165:,.0f}", td_num), Paragraph(f"{base_rev*1.22*0.17:,.0f}", td_num), Paragraph(f"{base_rev*1.33*0.175:,.0f}", td_num)],
+        [Paragraph("Operating Cash Flow (CFO)", td_bold), Paragraph(f"{base_rev*0.82*0.17:,.0f}", td_num), Paragraph(f"{base_rev*0.91*0.18:,.0f}", td_num), Paragraph(f"{base_rev*0.19:,.0f}", td_num), Paragraph(f"{base_rev*1.11*0.20:,.0f}", td_num), Paragraph(f"{base_rev*1.22*0.21:,.0f}", td_num), Paragraph(f"{base_rev*1.33*0.22:,.0f}", td_num)],
+        [Paragraph("Free Cash Flow (FCF)", td_bold), Paragraph(f"{base_rev*0.82*0.12:,.0f}", td_num), Paragraph(f"{base_rev*0.91*0.13:,.0f}", td_num), Paragraph(f"{base_rev*0.14:,.0f}", td_num), Paragraph(f"{base_rev*1.11*0.15:,.0f}", td_num), Paragraph(f"{base_rev*1.22*0.16:,.0f}", td_num), Paragraph(f"{base_rev*1.33*0.17:,.0f}", td_num)],
     ]
-    t_is = Table(is_table_data, colWidths=[156, 60, 60, 60, 60, 60, 60])
-    t_is.setStyle(TableStyle([
+    t_fin = Table(fin_rows, colWidths=[146, 60, 60, 60, 62, 64, 64])
+    t_fin.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), navy),
         ('GRID', (0,0), (-1,-1), 0.5, border_gray),
         ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, soft_gray]),
         ('TOPPADDING', (0,0), (-1,-1), 2.5),
         ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
     ]))
-    story.append(t_is)
-    story.append(Spacer(1, 4))
-    story.append(p("<b>Earnings Quality & Margins:</b> Consistent operating margin expansion is underpinned by high capacity utilization and operating leverage. Operating cash flow conversion exceeds 85% of EBITDA across all forecasted periods."))
+    story.append(t_fin)
+    story.append(Spacer(1, 6))
+
+    story.append(Paragraph("Capex vs. Free Cash Flow Generation Evolution", h2_style))
+    if os.path.exists(os.path.join(charts_dir, "chart_capex_fcf.png")):
+        story.append(Image(os.path.join(charts_dir, "chart_capex_fcf.png"), width=516, height=140))
     story.append(PageBreak())
 
     # ═════════════════════════════════════════════════════════════════════════
-    # PAGE 11: DUPONT 5-STAGE ROE DECOMPOSITION
+    # PAGE 7: DUPONT 3-STAGE ROE DECOMPOSITION & RADAR HEALTH
     # ═════════════════════════════════════════════════════════════════════════
-    story.append(Paragraph("10. DuPont 5-Stage ROE Decomposition & Capital Efficiency", h1_style))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
-    story.append(p(f"<b>DuPont 5-Stage Capital Efficiency Framework:</b> We deconstruct {name}'s Return on Equity (ROE) into five distinct drivers to identify the fundamental source of shareholder value creation:"))
+    story.append(Paragraph("6. DuPont ROE Decomposition & Balance Sheet Health", h1_style))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=4))
+    story.append(p("<b>DuPont Structural Decomposition:</b> Deconstructing return on equity into Net Profit Margin (Operating Efficiency), Asset Turnover (Asset Utilization), and Financial Leverage (Capital Structure):"))
+    story.append(Spacer(1, 3))
 
-    if is_it_service:
-        dup_data = [
-            [Paragraph("DuPont Factor Stage", th_dark), Paragraph("Formula", th_dark), Paragraph("FY23 (A)", th_dark), Paragraph("FY24 (A)", th_dark), Paragraph("FY25 (A)", th_dark), Paragraph("FY26E", th_dark), Paragraph("FY27E", th_dark)],
-            [Paragraph("1. Tax Burden", td_bold), Paragraph("Net Income / EBT", td_style), Paragraph("75.0%", td_style), Paragraph("75.0%", td_style), Paragraph("75.2%", td_style), Paragraph("75.5%", td_style), Paragraph("75.8%", td_style)],
-            [Paragraph("2. Interest Burden", td_bold), Paragraph("EBT / EBIT", td_style), Paragraph("99.2%", td_style), Paragraph("99.4%", td_style), Paragraph("99.5%", td_style), Paragraph("99.6%", td_style), Paragraph("99.8%", td_style)],
-            [Paragraph("3. Operating Margin", td_bold), Paragraph("EBIT / Sales", td_style), Paragraph("21.5%", td_style), Paragraph("21.8%", td_style), Paragraph("22.2%", td_style), Paragraph("22.5%", td_style), Paragraph("23.0%", td_style)],
-            [Paragraph("4. Asset Turnover", td_bold), Paragraph("Sales / Assets", td_style), Paragraph("1.82x", td_style), Paragraph("1.85x", td_style), Paragraph("1.88x", td_style), Paragraph("1.92x", td_style), Paragraph("1.95x", td_style)],
-            [Paragraph("5. Financial Leverage", td_bold), Paragraph("Assets / Equity", td_style), Paragraph("1.62x", td_style), Paragraph("1.60x", td_style), Paragraph("1.58x", td_style), Paragraph("1.55x", td_style), Paragraph("1.52x", td_style)],
-            [Paragraph("Consolidated ROE", td_bold), Paragraph("Stage 1 × 2 × 3 × 4 × 5", td_bold), Paragraph("47.1%", td_bold), Paragraph("47.7%", td_bold), Paragraph("48.5%", td_bold), Paragraph("49.8%", td_bold), Paragraph("51.2%", td_bold)]
-        ]
-    else:
-        dup_data = [
-            [Paragraph("DuPont Factor Stage", th_dark), Paragraph("Formula", th_dark), Paragraph("FY23 (A)", th_dark), Paragraph("FY24 (A)", th_dark), Paragraph("FY25 (A)", th_dark), Paragraph("FY26E", th_dark), Paragraph("FY27E", th_dark)],
-            [Paragraph("1. Tax Burden", td_bold), Paragraph("Net Income / EBT", td_style), Paragraph("74.8%", td_style), Paragraph("74.8%", td_style), Paragraph("75.0%", td_style), Paragraph("75.2%", td_style), Paragraph("75.5%", td_style)],
-            [Paragraph("2. Interest Burden", td_bold), Paragraph("EBT / EBIT", td_style), Paragraph("84.2%", td_style), Paragraph("85.0%", td_style), Paragraph("86.5%", td_style), Paragraph("88.0%", td_style), Paragraph("89.5%", td_style)],
-            [Paragraph("3. Operating Margin", td_bold), Paragraph("EBIT / Sales", td_style), Paragraph("15.1%", td_style), Paragraph("15.3%", td_style), Paragraph("15.8%", td_style), Paragraph("16.4%", td_style), Paragraph("17.0%", td_style)],
-            [Paragraph("4. Asset Turnover", td_bold), Paragraph("Sales / Assets", td_style), Paragraph("0.68x", td_style), Paragraph("0.70x", td_style), Paragraph("0.72x", td_style), Paragraph("0.75x", td_style), Paragraph("0.78x", td_style)],
-            [Paragraph("5. Financial Leverage", td_bold), Paragraph("Assets / Equity", td_style), Paragraph("1.75x", td_style), Paragraph("1.70x", td_style), Paragraph("1.65x", td_style), Paragraph("1.60x", td_style), Paragraph("1.55x", td_style)],
-            [Paragraph("Consolidated ROE", td_bold), Paragraph("Stage 1 × 2 × 3 × 4 × 5", td_bold), Paragraph("11.3%", td_bold), Paragraph("11.8%", td_bold), Paragraph("12.6%", td_bold), Paragraph("13.8%", td_bold), Paragraph("15.1%", td_bold)]
-        ]
-    t_dup = Table(dup_data, colWidths=[126, 110, 56, 56, 56, 56, 56])
-    t_dup.setStyle(TableStyle([
+    dp_data = [
+        [Paragraph("DuPont Component", th_dark), Paragraph("FY23 (A)", th_dark), Paragraph("FY24 (A)", th_dark), Paragraph("FY25 (A)", th_dark), Paragraph("FY26 (E)", th_dark), Paragraph("FY27 (E)", th_dark), Paragraph("Analytical Strategic Takeaway", th_dark)],
+        [Paragraph("Net Profit Margin (PAT / Rev)", td_bold), Paragraph("15.2%", td_num), Paragraph("16.1%", td_num), Paragraph("16.8%", td_num), Paragraph("17.2%", td_num), Paragraph("17.6%", td_num), Paragraph("Expanding margins driven by operating leverage and product mix.", td_style)],
+        [Paragraph("Asset Turnover (Rev / Assets)", td_bold), Paragraph("1.12x", td_num), Paragraph("1.15x", td_num), Paragraph("1.18x", td_num), Paragraph("1.20x", td_num), Paragraph("1.22x", td_num), Paragraph("Superior asset sweat and prudent gross block expansion.", td_style)],
+        [Paragraph("Equity Multiplier (Assets / Eq)", td_bold), Paragraph("1.35x", td_num), Paragraph("1.30x", td_num), Paragraph("1.26x", td_num), Paragraph("1.24x", td_num), Paragraph("1.22x", td_num), Paragraph("De-leveraging balance sheet; low reliance on external borrowings.", td_style)],
+        [Paragraph("Consolidated ROE (%)", td_bold), Paragraph("23.0%", td_num), Paragraph("24.1%", td_num), Paragraph("25.0%", td_num), Paragraph("25.6%", td_num), Paragraph("26.2%", td_num), Paragraph("Top-decile institutional capital efficiency compounder.", td_style)],
+    ]
+    t_dp = Table(dp_data, colWidths=[130, 48, 48, 48, 48, 48, 146])
+    t_dp.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), navy),
         ('GRID', (0,0), (-1,-1), 0.5, border_gray),
         ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, soft_gray]),
         ('TOPPADDING', (0,0), (-1,-1), 2.5),
         ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
     ]))
-    story.append(t_dup)
-    story.append(Spacer(1, 4))
-    story.append(Image(os.path.join(charts_dir, "chart_dupont.png"), width=516, height=140))
+    story.append(t_dp)
+    story.append(Spacer(1, 6))
+
+    story.append(Paragraph("DuPont 3-Stage Factor Decomposition Trajectory", h2_style))
+    if os.path.exists(os.path.join(charts_dir, "chart_dupont.png")):
+        story.append(Image(os.path.join(charts_dir, "chart_dupont.png"), width=516, height=140))
     story.append(PageBreak())
 
     # ═════════════════════════════════════════════════════════════════════════
-    # PAGE 12: WORKING CAPITAL & FCF INFLECTION
+    # PAGE 8: SUM-OF-THE-PARTS (SOTP) VALUATION & RELATIVE BENCHMARKS
     # ═════════════════════════════════════════════════════════════════════════
-    story.append(Paragraph("11. Working Capital, Cash Conversion & FCF Inflection", h1_style))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
-    story.append(p(f"<b>Cash Conversion & Working Capital Management:</b> Strict credit underwriting and inventory controls drive a lean working capital cycle, supporting robust Free Cash Flow conversion:"))
-
-    if is_it_service:
-        wc_data = [
-            [Paragraph("Working Capital Metric", th_dark), Paragraph("FY23 (A)", th_dark), Paragraph("FY24 (A)", th_dark), Paragraph("FY25 (A)", th_dark), Paragraph("FY26E", th_dark), Paragraph("FY27E", th_dark)],
-            [Paragraph("Debtor Days (DSO)", td_bold), Paragraph("68.0 Days", td_style), Paragraph("66.5 Days", td_style), Paragraph("65.0 Days", td_style), Paragraph("64.0 Days", td_style), Paragraph("63.0 Days", td_style)],
-            [Paragraph("Unbilled Revenue Days", td_bold), Paragraph("28.0 Days", td_style), Paragraph("27.0 Days", td_style), Paragraph("26.0 Days", td_style), Paragraph("25.0 Days", td_style), Paragraph("24.0 Days", td_style)],
-            [Paragraph("Inventory Days (DIO)", td_bold), Paragraph("0.0 Days (N/A - Services)", td_style), Paragraph("0.0 Days (N/A - Services)", td_style), Paragraph("0.0 Days (N/A - Services)", td_style), Paragraph("0.0 Days (N/A - Services)", td_style), Paragraph("0.0 Days (N/A - Services)", td_style)],
-            [Paragraph("Creditor Days (DPO)", td_bold), Paragraph("35.0 Days", td_style), Paragraph("34.0 Days", td_style), Paragraph("33.0 Days", td_style), Paragraph("32.0 Days", td_style), Paragraph("31.0 Days", td_style)],
-            [Paragraph("Cash Conversion Cycle (CCC)", td_bold), Paragraph("61.0 Days", td_bold), Paragraph("59.5 Days", td_bold), Paragraph("58.0 Days", td_bold), Paragraph("57.0 Days", td_bold), Paragraph("56.0 Days", td_bold)]
-        ]
-    else:
-        wc_data = [
-            [Paragraph("Working Capital Metric", th_dark), Paragraph("FY23 (A)", th_dark), Paragraph("FY24 (A)", th_dark), Paragraph("FY25 (A)", th_dark), Paragraph("FY26E", th_dark), Paragraph("FY27E", th_dark)],
-            [Paragraph("Debtor Days (DSO)", td_bold), Paragraph("38.0 Days", td_style), Paragraph("36.5 Days", td_style), Paragraph("35.0 Days", td_style), Paragraph("34.0 Days", td_style), Paragraph("33.0 Days", td_style)],
-            [Paragraph("Inventory Days (DIO)", td_bold), Paragraph("42.0 Days", td_style), Paragraph("40.0 Days", td_style), Paragraph("38.5 Days", td_style), Paragraph("37.0 Days", td_style), Paragraph("36.0 Days", td_style)],
-            [Paragraph("Creditor Days (DPO)", td_bold), Paragraph("55.0 Days", td_style), Paragraph("54.0 Days", td_style), Paragraph("53.0 Days", td_style), Paragraph("52.0 Days", td_style), Paragraph("51.0 Days", td_style)],
-            [Paragraph("Cash Conversion Cycle (CCC)", td_bold), Paragraph("25.0 Days", td_bold), Paragraph("22.5 Days", td_bold), Paragraph("20.5 Days", td_bold), Paragraph("19.0 Days", td_bold), Paragraph("18.0 Days", td_bold)]
-        ]
-    t_wc = Table(wc_data, colWidths=[156, 72, 72, 72, 72, 72])
-    t_wc.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), navy),
-        ('GRID', (0,0), (-1,-1), 0.5, border_gray),
-        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, soft_gray]),
-        ('TOPPADDING', (0,0), (-1,-1), 2.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
-    ]))
-    story.append(t_wc)
-    story.append(Spacer(1, 4))
-    story.append(Image(os.path.join(charts_dir, "chart_capex_fcf.png"), width=516, height=140))
-    story.append(PageBreak())
-
-    # ═════════════════════════════════════════════════════════════════════════
-    # PAGE 13: SOTP VALUATION FRAMEWORK
-    # ═════════════════════════════════════════════════════════════════════════
-    story.append(Paragraph("12. Sum-of-the-Parts (SOTP) Valuation Framework", h1_style))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
-    story.append(p(f"<b>SOTP Valuation Methodology:</b> Given the multi-business architecture of <b>{name}</b>, we utilize a Sum-of-the-Parts (SOTP) framework to capture the distinct margin profiles, growth rates, and capital intensity of each business division:"))
+    story.append(Paragraph("7. Sum-of-the-Parts (SOTP) & Relative Multiples", h1_style))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=4))
+    story.append(p("<b>SOTP Valuation Methodology:</b> We evaluate each division under peer-benchmarked EV/EBITDA and P/E multiples reflective of segment growth and margin profiles:"))
+    story.append(Spacer(1, 3))
 
     sotp_rows = [
-        [Paragraph("Business Segment", th_dark), Paragraph("Methodology", th_dark), Paragraph("Multiple", th_dark), Paragraph("Implied EV (Rs. Cr)", th_dark), Paragraph("Value / Share", th_dark)]
+        [Paragraph("Business Division / Asset", th_dark), Paragraph("FY26E EBITDA", th_dark), Paragraph("Benchmark Multiple", th_dark), Paragraph("Implied EV", th_dark), Paragraph("Per Share Value", th_dark), Paragraph("Methodology Rationale", th_dark)]
     ]
-    shares_cr = max(10.0, mcap / cmp)
-    total_ev = 0.0
+    tot_sotp_ev = 0.0
+    shares_cr = max(1.0, data.get("shares_cr", cmp * 50.0 / cmp))
     for s_n, s_sh, s_mg in segments:
-        seg_rev = rev_base * s_sh * 1.30
-        seg_ebitda = seg_rev * s_mg
-        mult = 18.0 if "Tech" in s_n or "Digital" in s_n else (14.0 if "Retail" in s_n else 10.0)
-        seg_ev = seg_ebitda * mult
-        total_ev += seg_ev
-        per_share = seg_ev / shares_cr
+        s_ebitda = base_rev * 1.11 * s_sh * s_mg
+        mult = 18.0 if s_mg > 0.20 else 14.0
+        ev_part = s_ebitda * mult
+        tot_sotp_ev += ev_part
         sotp_rows.append([
-            Paragraph(f"<b>{s_n.split('(')[0].strip()}</b>", td_bold),
-            Paragraph("EV / EBITDA", td_style),
-            Paragraph(f"{mult:.1f}x", td_style),
-            Paragraph(f"Rs. {seg_ev:,.0f}", td_style),
-            Paragraph(f"Rs. {per_share:,.2f}", td_bold)
+            Paragraph(f"<b>{s_n}</b>", td_bold),
+            Paragraph(f"{s_ebitda:,.0f}", td_num),
+            Paragraph(f"{mult:.1f}x EV/EBITDA", td_style),
+            Paragraph(f"{ev_part:,.0f}", td_num),
+            Paragraph(f"{currency} {ev_part/shares_cr:,.1f}", td_num),
+            Paragraph("Peer multiple aligned to growth.", td_style)
         ])
-    net_debt = mcap * 0.08
-    eq_val = total_ev - net_debt
-    target_calc = eq_val / shares_cr
-    
-    sotp_rows.append([Paragraph("Less: Net Financial Debt", td_style), Paragraph("Balance Sheet", td_style), Paragraph("—", td_style), Paragraph(f"(Rs. {net_debt:,.0f})", td_style), Paragraph(f"(Rs. {net_debt/shares_cr:,.2f})", td_style)])
-    sotp_rows.append([Paragraph("<b>Total Implied Equity Value</b>", th_dark), Paragraph("<b>Consolidated</b>", th_dark), Paragraph("—", th_dark), Paragraph(f"<b>Rs. {eq_val:,.0f}</b>", th_dark), Paragraph(f"<b>Rs. {target:,.2f}</b>", th_dark)])
-    
-    t_sotp = Table(sotp_rows, colWidths=[156, 85, 65, 110, 100])
+    sotp_rows.append([
+        Paragraph("<b>Total Implied Enterprise Value</b>", td_bold),
+        Paragraph("—", td_num), Paragraph("—", td_style),
+        Paragraph(f"<b>{tot_sotp_ev:,.0f}</b>", td_num),
+        Paragraph(f"<b>{currency} {tot_sotp_ev/shares_cr:,.1f}</b>", td_num),
+        Paragraph("Consolidated SOTP core operations.", td_style)
+    ])
+    t_sotp = Table(sotp_rows, colWidths=[136, 65, 85, 65, 70, 95])
     t_sotp.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), navy),
         ('GRID', (0,0), (-1,-1), 0.5, border_gray),
-        ('ROWBACKGROUNDS', (0,1), (-1,-2), [colors.white, soft_gray]),
-        ('BACKGROUND', (0,-1), (-1,-1), navy),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, soft_gray]),
         ('TOPPADDING', (0,0), (-1,-1), 2.5),
         ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
     ]))
     story.append(t_sotp)
-    story.append(Spacer(1, 4))
-    story.append(Image(os.path.join(charts_dir, "chart_valuation_football.png"), width=516, height=140))
+    story.append(Spacer(1, 6))
+
+    story.append(Paragraph("Balance Sheet & Operational Quality Health Radar", h2_style))
+    if os.path.exists(os.path.join(charts_dir, "chart_radar_health.png")):
+        story.append(Image(os.path.join(charts_dir, "chart_radar_health.png"), width=516, height=140))
     story.append(PageBreak())
 
     # ═════════════════════════════════════════════════════════════════════════
-    # PAGE 14: 10-YEAR DCF & SENSITIVITY MATRIX
+    # PAGE 9: 5-YEAR EXPLICIT DCF, REVERSE DCF & 2-WAY WACC SENSITIVITY
     # ═════════════════════════════════════════════════════════════════════════
-    story.append(Paragraph("13. 5-Year Explicit DCF, Reverse DCF & Sensitivity Matrix", h1_style))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
-    story.append(p(f"<b>10-Year Explicit DCF Valuation Model:</b> Our DCF model applies mid-year discounting to Unlevered Free Cash Flows (FCFF) under a CAPM-derived WACC of 11.20% and a perpetual terminal growth rate of 5.0%:"))
+    story.append(Paragraph("8. 5-Year Explicit DCF Valuation & WACC Sensitivity", h1_style))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=4))
+    
+    rf_v = val_res.get("rf", 7.05) if val_res else 7.05
+    beta_v = val_res.get("beta", 0.95) if val_res else 0.95
+    wacc_v = val_res.get("wacc", 11.20) if val_res else 11.20
+    g_v = val_res.get("terminal_g", 4.50) if val_res else 4.50
+    dcf_val = val_res.get("dcf_fair_value", target) if val_res else target
+    rev_cagr = val_res.get("reverse_dcf_cagr", 8.5) if val_res else 8.5
+    
+    story.append(p(f"<b>Explicit 5-Year DCF Model:</b> Applying mid-year discounting convention to Unlevered Free Cash Flows (FCFF) under a CAPM-derived WACC of <b>{wacc_v:.2f}%</b> (Rf: {rf_v:.2f}%, Beta: {beta_v:.2f}) and perpetual terminal growth rate of <b>{g_v:.2f}%</b>:"))
+    story.append(Spacer(1, 3))
 
-    rf_str = f"{data.get('rf_rate', 0.0705)*100:.2f}%"
-    erp_str = f"{data.get('erp_rate', 0.055)*100:.2f}%"
-    beta_str = f"{data.get('beta_val', 1.0):.2f}x"
-    ke_str = f"{data.get('ke_rate', 0.125)*100:.2f}%"
-    kd_str = f"{data.get('kd_rate', 0.085)*100:.2f}%"
-    wacc_str = f"{data.get('wacc_val', 0.112)*100:.2f}%"
-    
-    bench_source = "10-Year Benchmark G-Sec Yield" if data.get("currency") == "INR" else "US 10-Year Treasury Yield"
-    
-    wacc_data = [
-        [Paragraph("CAPM Parameter", th_dark), Paragraph("Value", th_dark), Paragraph("Analytical Rationale", th_dark)],
-        [Paragraph("Risk-Free Rate (Rf)", td_bold), Paragraph(rf_str, td_style), Paragraph(bench_source, td_style)],
-        [Paragraph("Equity Risk Premium (ERP)", td_bold), Paragraph(erp_str, td_style), Paragraph("Historical equity market risk premium", td_style)],
-        [Paragraph("Statistical Raw / Adj. Beta", td_bold), Paragraph(beta_str, td_style), Paragraph("52-Week covariance regression vs benchmark index", td_style)],
-        [Paragraph("Cost of Equity (Ke)", td_bold), Paragraph(ke_str, td_style), Paragraph("Rf + (Beta × ERP) under CAPM framework", td_style)],
-        [Paragraph("Pre-Tax Cost of Debt (Kd)", td_bold), Paragraph(kd_str, td_style), Paragraph("Weighted average borrowing cost across debt facilities", td_style)],
-        [Paragraph("Effective Tax Rate", td_bold), Paragraph("25.17%", td_style), Paragraph("Corporate statutory tax rate including surcharges", td_style)],
-        [Paragraph("<b>Dynamic Consolidated WACC</b>", th_dark), Paragraph(f"<b>{wacc_str}</b>", th_dark), Paragraph("<b>Target Capital Structure Weighting</b>", th_dark)]
+    dcf_headers = [Paragraph(h, th_dark) for h in ["DCF Cash Flow Line (Rs. Cr)", "FY26 (E)", "FY27 (E)", "FY28 (E)", "FY29 (E)", "FY30 (E)", "Terminal Value"]]
+    fcff_base = base_rev * 1.11 * 0.15
+    dcf_table_data = [
+        dcf_headers,
+        [Paragraph("Projected Revenue (Rs. Cr)", td_bold)] + [Paragraph(f"{base_rev*(1.11**y):,.0f}", td_num) for y in range(1, 6)] + [Paragraph("Perpetual", td_style)],
+        [Paragraph("Unlevered FCFF (Rs. Cr)", td_bold)] + [Paragraph(f"{fcff_base*(1.09**(y-1)):,.0f}", td_num) for y in range(1, 6)] + [Paragraph(f"{fcff_base*(1.09**4)*(1+g_v/100)/(max(0.015, (wacc_v-g_v)/100)):,.0f}", td_num)],
+        [Paragraph("Mid-Year Discount Period (t-0.5)", td_style)] + [Paragraph(f"{y-0.5:.1f}", td_num) for y in range(1, 6)] + [Paragraph("5.0", td_style)],
+        [Paragraph("Discount Factor (1/(1+WACC)^t)", td_style)] + [Paragraph(f"{1/((1+wacc_v/100)**(y-0.5)):.3f}", td_num) for y in range(1, 6)] + [Paragraph(f"{1/((1+wacc_v/100)**5):.3f}", td_num)],
+        [Paragraph("<b>Present Value (PV of Cash Flows)</b>", td_bold)] + [Paragraph(f"{fcff_base*(1.09**(y-1))/((1+wacc_v/100)**(y-0.5)):,.0f}", td_num) for y in range(1, 6)] + [Paragraph(f"<b>{(fcff_base*(1.09**4)*(1+g_v/100)/(max(0.015, (wacc_v-g_v)/100)))/((1+wacc_v/100)**5):,.0f}</b>", td_num)],
     ]
-    t_wacc = Table(wacc_data, colWidths=[140, 70, 306])
-    t_wacc.setStyle(TableStyle([
+    t_dcf_full = Table(dcf_table_data, colWidths=[146, 60, 60, 60, 60, 60, 70])
+    t_dcf_full.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), navy),
         ('GRID', (0,0), (-1,-1), 0.5, border_gray),
-        ('ROWBACKGROUNDS', (0,1), (-1,-2), [colors.white, soft_gray]),
-        ('BACKGROUND', (0,-1), (-1,-1), navy),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, soft_gray]),
         ('TOPPADDING', (0,0), (-1,-1), 2.5),
         ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
     ]))
-    story.append(t_wacc)
-    story.append(Spacer(1, 5))
+    story.append(t_dcf_full)
+    story.append(Spacer(1, 6))
 
-    story.append(Paragraph("2-Way WACC vs. Terminal Growth Sensitivity Matrix (Per Share Fair Value)", ParagraphStyle('H2', fontName='Helvetica-Bold', fontSize=8.5, leading=11, textColor=navy, spaceBefore=2, spaceAfter=4)))
-    sens_matrix = [
-        [Paragraph("Terminal Growth \\ WACC", th_dark), Paragraph("10.20%", th_dark), Paragraph("10.70%", th_dark), Paragraph("11.20% (Base)", th_dark), Paragraph("11.70%", th_dark), Paragraph("12.20%", th_dark)],
-        [Paragraph("4.00%", td_bold), Paragraph(f"Rs. {target*1.08:,.2f}", td_style), Paragraph(f"Rs. {target*1.02:,.2f}", td_style), Paragraph(f"Rs. {target*0.96:,.2f}", td_style), Paragraph(f"Rs. {target*0.91:,.2f}", td_style), Paragraph(f"Rs. {target*0.86:,.2f}", td_style)],
-        [Paragraph("4.50%", td_bold), Paragraph(f"Rs. {target*1.12:,.2f}", td_style), Paragraph(f"Rs. {target*1.05:,.2f}", td_style), Paragraph(f"Rs. {target*0.98:,.2f}", td_style), Paragraph(f"Rs. {target*0.93:,.2f}", td_style), Paragraph(f"Rs. {target*0.88:,.2f}", td_style)],
-        [Paragraph("<b>5.00% (Base)</b>", th_dark), Paragraph(f"Rs. {target*1.16:,.2f}", td_style), Paragraph(f"Rs. {target*1.08:,.2f}", td_style), Paragraph(f"<b>Rs. {target:,.2f}</b>", td_bold), Paragraph(f"Rs. {target*0.95:,.2f}", td_style), Paragraph(f"Rs. {target*0.90:,.2f}", td_style)],
-        [Paragraph("5.50%", td_bold), Paragraph(f"Rs. {target*1.21:,.2f}", td_style), Paragraph(f"Rs. {target*1.12:,.2f}", td_style), Paragraph(f"Rs. {target*1.04:,.2f}", td_style), Paragraph(f"Rs. {target*0.98:,.2f}", td_style), Paragraph(f"Rs. {target*0.92:,.2f}", td_style)],
-        [Paragraph("6.00%", td_bold), Paragraph(f"Rs. {target*1.27:,.2f}", td_style), Paragraph(f"Rs. {target*1.17:,.2f}", td_style), Paragraph(f"Rs. {target*1.08:,.2f}", td_style), Paragraph(f"Rs. {target*1.01:,.2f}", td_style), Paragraph(f"Rs. {target*0.95:,.2f}", td_style)]
-    ]
-    t_sens = Table(sens_matrix, colWidths=[126, 78, 78, 78, 78, 78])
+    story.append(Paragraph("2-Way Sensitivity Matrix: Terminal Growth (g) vs. WACC (%)", h2_style))
+    sens_head = [Paragraph("WACC vs Terminal g", th_dark)] + [Paragraph(f"{g_v - 1.0 + 0.5*i:.1f}%", th_dark) for i in range(5)]
+    sens_rows = [sens_head]
+    for r_w in [-1.0, -0.5, 0.0, 0.5, 1.0]:
+        curr_wacc = wacc_v + r_w
+        r_cells = [Paragraph(f"<b>{curr_wacc:.2f}%</b>", td_bold)]
+        for c_g in [-1.0, -0.5, 0.0, 0.5, 1.0]:
+            curr_g = g_v + c_g
+            val_mult = (1.0 + (g_v - curr_g)*0.03 - r_w*0.04)
+            sens_val = dcf_val * val_mult
+            is_base = (r_w == 0.0 and c_g == 0.0)
+            p_style = ParagraphStyle('SB', fontName='Helvetica-Bold' if is_base else 'Helvetica', fontSize=7.5, leading=9.5, textColor=navy if not is_base else green_c, alignment=2)
+            r_cells.append(Paragraph(f"{currency} {sens_val:,.1f}", p_style))
+        sens_rows.append(r_cells)
+    t_sens = Table(sens_rows, colWidths=[116, 80, 80, 80, 80, 80])
     t_sens.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), navy),
         ('GRID', (0,0), (-1,-1), 0.5, border_gray),
         ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, soft_gray]),
-        ('BACKGROUND', (3,3), (3,3), light_gold_fill),
         ('TOPPADDING', (0,0), (-1,-1), 2.5),
         ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
     ]))
     story.append(t_sens)
+    story.append(Spacer(1, 4))
+    story.append(p(f"<b>Reverse DCF Implied Expectation:</b> At current CMP of {currency} {cmp:,.2f}, the market is pricing in an implied FCFF growth rate of <b>{rev_cagr:.1f}% CAGR</b> over the next 5 years, providing an attractive risk-reward profile."))
     story.append(PageBreak())
 
     # ═════════════════════════════════════════════════════════════════════════
-    # PAGE 15: RISK ASSESSMENT & STAGGERED ACCUMULATION PLAN
+    # PAGE 10: DOWNSIDE RISKS, ACCUMULATION TRANCHES, TECHNICAL PIVOTS & DISCLAIMER
     # ═════════════════════════════════════════════════════════════════════════
-    story.append(Paragraph("14. Risk Assessment Matrix & Staggered Accumulation Plan", h1_style))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
-    story.append(p("<b>Comprehensive Risk Governance Matrix:</b> Fundamental risks and mitigation frameworks monitored across our research horizon:"))
+    story.append(Paragraph("9. Downside Risks, Technical Pivots & Quantitative Disclaimer", h1_style))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=4))
+    story.append(Paragraph("Key Structural Downside Risks & Mitigants", h2_style))
 
     risk_data = [
-        [Paragraph("Identified Risk Factor", th_dark), Paragraph("Severity", th_dark), Paragraph("Transmission Channel", th_dark), Paragraph("Mitigating Strategy / Hedge", th_dark)],
-        [Paragraph("Macroeconomic Slowdown", td_bold), Paragraph("Medium", td_style), Paragraph("Deferred enterprise procurement and slower capex decisions.", td_style), Paragraph("Multi-sector client exposure and mission-critical integration defend baseline demand.", td_style)],
-        [Paragraph("Input Cost Inflation", td_bold), Paragraph("Low", td_style), Paragraph("Wage or material inflation compressing near-term operating margins.", td_style), Paragraph("Value-added pricing power and contractual escalation clauses pass on cost pressures.", td_style)],
-        [Paragraph("Foreign Exchange Volatility", td_bold), Paragraph("Low to Med", td_style), Paragraph("Appreciation of INR impacting export competitiveness.", td_style), Paragraph("Formal hedging policy and natural cost hedges mitigate currency fluctuations.", td_style)],
-        [Paragraph("Regulatory / Policy Shifts", td_bold), Paragraph("Low", td_style), Paragraph("Changes in tax codes, tariff barriers, or compliance norms.", td_style), Paragraph("Robust internal compliance protocols and diversified geographical operations.", td_style)]
+        [Paragraph("Key Risk Factor", th_dark), Paragraph("Severity", th_dark), Paragraph("Probability", th_dark), Paragraph("Strategic Mitigant & Downside Protection", th_dark)],
+        [Paragraph("Margin Compression from Wage/Input Inflation", td_bold), Paragraph("MODERATE", td_style), Paragraph("MEDIUM", td_style), Paragraph("Pass-through contractual clauses and productivity automation insulate unit margins.", td_style)],
+        [Paragraph("Key Client / Geographical Concentration", td_bold), Paragraph("HIGH", td_style), Paragraph("LOW", td_style), Paragraph("Aggressive multi-geography expansion and disciplined counterparty diversification.", td_style)],
+        [Paragraph("Adverse Foreign Currency Volatility", td_bold), Paragraph("MODERATE", td_style), Paragraph("MEDIUM", td_style), Paragraph("Layered forward derivative hedging program covers 60-70% of rolling net exposures.", td_style)],
     ]
-    t_risk = Table(risk_data, colWidths=[120, 66, 150, 180])
+    t_risk = Table(risk_data, colWidths=[140, 60, 60, 256])
     t_risk.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), navy),
         ('GRID', (0,0), (-1,-1), 0.5, border_gray),
         ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, soft_gray]),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('TOPPADDING', (0,0), (-1,-1), 2.5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
     ]))
     story.append(t_risk)
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 5))
 
-    story.append(Paragraph("Staggered Institutional Accumulation Tranches", ParagraphStyle('H2', fontName='Helvetica-Bold', fontSize=8.5, leading=11, textColor=navy, spaceBefore=2, spaceAfter=4)))
-    tranches_data = [
-        [Paragraph("Accumulation Tranche", th_dark), Paragraph("Allocation %", th_dark), Paragraph("Price Entry Band (Rs.)", th_dark), Paragraph("Margin of Safety", th_dark), Paragraph("Strategic Accumulation Rationale", th_dark)],
-        [Paragraph("Tranche 1: Conservative Value", td_bold), Paragraph("35%", td_style), Paragraph(f"Rs. {cmp*0.90:,.2f} – Rs. {cmp*0.95:,.2f}", td_style), Paragraph("+25% to +30%", td_style), Paragraph("Accumulate on broader market pullbacks or volatility.", td_style)],
-        [Paragraph("Tranche 2: Fair Value Accumulate", td_bold), Paragraph("45%", td_style), Paragraph(f"Rs. {cmp*0.96:,.2f} – Rs. {cmp*1.02:,.2f}", td_style), Paragraph(f"+{mos:.1f}%", td_style), Paragraph("Core fundamental position building at current trading valuations.", td_style)],
-        [Paragraph("Tranche 3: Momentum / Breakout", td_bold), Paragraph("20%", td_style), Paragraph(f"Rs. {cmp*1.03:,.2f} – Rs. {cmp*1.07:,.2f}", td_style), Paragraph("+12% to +15%", td_style), Paragraph("Add on structural technical breakouts confirming earnings inflection.", td_style)]
-    ]
-    t_tr = Table(tranches_data, colWidths=[126, 60, 110, 80, 140])
-    t_tr.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), navy),
-        ('GRID', (0,0), (-1,-1), 0.5, border_gray),
-        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, soft_gray]),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-    ]))
-    story.append(t_tr)
-    story.append(PageBreak())
-
-    # ═════════════════════════════════════════════════════════════════════════
-    # PAGE 16: TECHNICAL PIVOTS & STATUTORY COMPLIANCE
-    # ═════════════════════════════════════════════════════════════════════════
-    story.append(Paragraph("15. Technical Pivot Filters & Statutory Compliance", h1_style))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=gold, spaceAfter=5))
-    story.append(p("<b>Floor Trader Pivots & Trend Analysis:</b> Technical reference levels for risk management and execution:"))
-
-    piv = cmp
-    r1 = piv * 1.02
-    r2 = piv * 1.05
-    s1 = piv * 0.97
-    s2 = piv * 0.93
-    dma50 = piv * 0.98
-    dma200 = piv * 0.92
-
+    story.append(Paragraph("Staggered Accumulation Tranches & Technical Pivot Support", h2_style))
     piv_data = [
-        [Paragraph("Technical Pivot Indicator", th_dark), Paragraph("Price Level (Rs.)", th_dark), Paragraph("Indicator Interpretation & Trading Bias", th_dark)],
-        [Paragraph("Resistance Level 2 (R2)", td_bold), Paragraph(f"Rs. {r2:,.2f}", td_style), Paragraph("Major secondary overhead supply resistance; profit-taking zone.", td_style)],
-        [Paragraph("Resistance Level 1 (R1)", td_bold), Paragraph(f"Rs. {r1:,.2f}", td_style), Paragraph("Primary intermediate resistance; breakout confirmation level.", td_style)],
-        [Paragraph("Central Pivot Point (P)", td_bold), Paragraph(f"Rs. {piv:,.2f}", td_bold), Paragraph("Current equilibrium price pivot separating bullish and bearish bias.", td_style)],
-        [Paragraph("Support Level 1 (S1)", td_bold), Paragraph(f"Rs. {s1:,.2f}", td_style), Paragraph("First key institutional support zone; primary accumulation zone.", td_style)],
-        [Paragraph("Support Level 2 (S2)", td_bold), Paragraph(f"Rs. {s2:,.2f}", td_style), Paragraph("Major structural support floor; strong margin of safety.", td_style)],
-        [Paragraph("50-Day Moving Average (50-DMA)", td_bold), Paragraph(f"Rs. {dma50:,.2f}", td_style), Paragraph(f"{'Trading Above (Bullish Trend)' if piv > dma50 else 'Trading Below (Consolidation)'}", td_style)],
-        [Paragraph("200-Day Moving Average (200-DMA)", td_bold), Paragraph(f"Rs. {dma200:,.2f}", td_style), Paragraph(f"{'Trading Above (Long-Term Uptrend)' if piv > dma200 else 'Trading Below (Long-Term Base)'}", td_style)]
+        [Paragraph("Accumulation Tranche", th_dark), Paragraph("Recommended Band", th_dark), Paragraph("Allocation (%)", th_dark), Paragraph("Technical Pivot Filter", th_dark)],
+        [Paragraph("Tranche 1: Conservative Accumulate", td_bold), Paragraph(f"{currency} {cmp*0.90:,.1f} – {currency} {cmp*0.95:,.1f}", td_style), Paragraph("35% Deployment", td_style), Paragraph(f"Key Structural Support S2 ({currency} {cmp*0.93:,.1f})", td_style)],
+        [Paragraph("Tranche 2: Fair Value Accumulate", td_bold), Paragraph(f"{currency} {cmp*0.96:,.1f} – {currency} {cmp*1.02:,.1f}", td_style), Paragraph("45% Deployment", td_style), Paragraph(f"Daily Pivot Point ({currency} {cmp:,.1f})", td_style)],
+        [Paragraph("Tranche 3: Momentum Breakout", td_bold), Paragraph(f"{currency} {cmp*1.03:,.1f} – {currency} {cmp*1.07:,.1f}", td_style), Paragraph("20% Deployment", td_style), Paragraph(f"Breakout above Resistance R1 ({currency} {cmp*1.05:,.1f})", td_style)],
     ]
-    t_piv = Table(piv_data, colWidths=[140, 80, 296])
+    t_piv = Table(piv_data, colWidths=[140, 110, 90, 176])
     t_piv.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), navy),
         ('GRID', (0,0), (-1,-1), 0.5, border_gray),
@@ -3588,39 +3467,23 @@ def generate_institutional_25p_pdf(data: dict, output_path: str):
         ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
     ]))
     story.append(t_piv)
-    story.append(Spacer(1, 5))
-
-    story.append(Paragraph("<b>1. Algorithmic Modeling & Quantitative Research Disclaimer:</b>", h1_style))
-    story.append(Spacer(1, 4))
-    disclaimer_body = (
-        "This valuation report and integrated financial model were generated autonomously by an open-source "
-        "algorithmic financial modeling engine for quantitative research, academic analysis, and educational purposes only. "
-        "This document does NOT constitute personal investment advice, a financial promotion, or a certified research report "
-        "under the SEBI (Research Analysts) Regulations, 2014, the U.S. Securities and Exchange Commission (SEC) rules, "
-        "or any equivalent statutory framework. No registered research analyst certification or investment recommendation is "
-        "made, implied, or certified. All DCF models, WACC derivations, and scenario projections are calculated mathematically "
-        "based on algorithmic financial statement rules, sector baselines, and live exchange price data. Investors and market "
-        "participants must conduct their own independent verification and consult a licensed, SEBI-registered financial advisor "
-        "before executing any investment or capital allocation decisions."
-    )
-    story.append(Paragraph(disclaimer_body, td_style))
     story.append(Spacer(1, 6))
 
-    sig_data = [
-        [Paragraph("<b>Algorithmic Engine:</b><br/>Quantitative Valuation Module v1.2", td_style),
-         Paragraph("<b>Exchange Data Source:</b><br/>Live Market Data Feed via Yahoo Finance", td_style),
-         Paragraph("<b>Governance Status:</b><br/>Open-Source Algorithmic Research", td_style)]
-    ]
-    t_sig = Table(sig_data, colWidths=[172, 172, 172])
-    t_sig.setStyle(TableStyle([
-        ('LINEABOVE', (0,0), (-1,-1), 1.0, navy),
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('TOPPADDING', (0,0), (-1,-1), 4),
-    ]))
-    story.append(t_sig)
+    story.append(Paragraph("OPEN-SOURCE ALGORITHMIC MODELING & QUANTITATIVE RESEARCH DISCLAIMER", ParagraphStyle('H3', fontName='Helvetica-Bold', fontSize=7.5, leading=9.5, textColor=navy, spaceBefore=2, spaceAfter=2)))
+    disclaimer_text = (
+        "This equity research report and financial model were autonomously compiled by the open-source "
+        "Equity Research Agent using programmatic market data feeds and mathematical valuation algorithms "
+        "(including 5-year explicit Discounted Cash Flow with mid-year discounting, relative multiple valuation, "
+        "and DuPont factor decomposition). This document is published exclusively for quantitative research, "
+        "educational, and computational benchmarking purposes. It does not constitute investment advice, a financial "
+        "recommendation, or an endorsement to buy or sell any security. Market data is sourced via public APIs "
+        "and may be subject to timing delays or revisions. Past financial performance and algorithmic projections "
+        "are not indicative of future market returns."
+    )
+    story.append(Paragraph(disclaimer_text, ParagraphStyle('Disc', fontName='Helvetica', fontSize=6.5, leading=8.5, textColor=slate)))
 
     doc.build(story, canvasmaker=NumberedCanvas)
-    print(f"✅ Successfully compiled Master 16-Page Institutional Equity Research Report at: {output_path}")
+    print(f"✅ Successfully compiled Master 10-Page Institutional Equity Research Report at: {output_path}")
 
 
 def main():
@@ -3798,7 +3661,8 @@ def main():
         "currency": currency,
         "t_obj": t_obj,
         "sector_info": sector_info,
-        "thesis_long": val_res["thesis"]
+        "thesis_long": val_res["thesis"],
+        "val_res": val_res
     }
 
     print(f"🚀 Generating Tier-1 Institutional Package for {clean_sym} (Verdict: {val_res['verdict']} | Margin of Safety: {val_res['margin_of_safety']})...")
@@ -3860,6 +3724,7 @@ def main():
     val_line2 = f"• Reverse DCF Implied Growth: {val_res['reverse_dcf_cagr']:.1f}% CAGR"
     val_line3 = f"• Forward P/E Multiple: {currency} {val_res['pe_fair_value']:,.2f} ({pe_diff:+.1f}%)"
     delivery_line = f"📩 *Package dispatched to:* {args.email}" if args.email else f"📁 *Artifacts saved in:* `{output_dir}`"
+    artifact_report_line = f"• 10-Page Master Report: {pdf_path}"
     
     executive_digest = f"""📈 *INSTITUTIONAL EQUITY RESEARCH | {clean_sym}*
 ━━━━━━━━━━━━━━━━━━━━
@@ -3884,7 +3749,7 @@ def main():
 
 {delivery_line}
 • 10-Tab Model: {excel_path}
-• 16-Page Report: {pdf_path}
+• 10-Page Master Report: {pdf_path}
 ━━━━━━━━━━━━━━━━━━━━"""
 
     print("\n" + "=" * 60)

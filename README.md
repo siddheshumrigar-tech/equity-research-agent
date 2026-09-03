@@ -5,13 +5,14 @@
 [![Code Style: Institutional](https://img.shields.io/badge/Standard-Tier--1%20Institutional-1A365D.svg)]()
 [![AI Agents](https://img.shields.io/badge/AI%20Agents-Claude%20%7C%20Codex%20%7C%20Cursor-8A2BE2.svg)]()
 [![Model](https://img.shields.io/badge/Excel-10--Tab%20Tesla--Style-217346.svg)]()
-[![Report](https://img.shields.io/badge/ReportLab-16--Page%20Vector%20PDF-C70039.svg)]()
+[![Report](https://img.shields.io/badge/ReportLab-10--Page%20Vector%20PDF-C70039.svg)]()
+[![Tests](https://github.com/siddheshumrigar-tech/equity-research-agent/actions/workflows/python-tests.yml/badge.svg)](https://github.com/siddheshumrigar-tech/equity-research-agent/actions)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/siddheshumrigar-tech/equity-research-agent/blob/main/notebooks/quickstart_colab.ipynb)
 
 An autonomous financial modeling and algorithmic valuation engine. Ingests live exchange market data, computes comprehensive 3-statement financial models, performs multi-method valuation (5-Year Explicit DCF + Gordon Growth, Relative P/E, Reverse DCF), generates high-resolution Matplotlib charts from authentic price history, and compiles:
 
-1. **A 16-Page Publication-Grade PDF Valuation Deck** with executive chapter layouts, WACC sensitivity matrices, and DuPont ROE trees.
-2. **A 10-Tab Executive Interactive Financial Model (`.xlsx`)** with dynamic Excel scenario dropdowns, balance sheet audit checks, and native openpyxl charts.
+1. **A 10-Page Master Institutional PDF Research Deck** with high-density page architecture (zero empty whitespace), executive chapter layouts, WACC sensitivity matrices, and DuPont ROE trees.
+2. **A 10-Tab Executive Interactive Financial Model (`.xlsx`)** with dynamic Excel scenario dropdowns, hidden calculation helper sheets, balance sheet audit checks, and native openpyxl charts.
 
 ---
 
