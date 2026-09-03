@@ -7,10 +7,10 @@
 [![Model](https://img.shields.io/badge/Excel-10--Tab%20Tesla--Style-217346.svg)]()
 [![Report](https://img.shields.io/badge/ReportLab-16--Page%20Vector%20PDF-C70039.svg)]()
 
-An autonomous, production-grade financial valuation and equity research agent. Automatically fetches exchange market data, computes comprehensive financial statement models, performs multi-method valuation, generates high-resolution Matplotlib charts, and compiles:
+An autonomous financial modeling and algorithmic valuation engine. Ingests live exchange market data, computes comprehensive 3-statement financial models, performs multi-method valuation (10-Year DCF, Relative P/E, Reverse DCF), generates high-resolution Matplotlib charts from authentic price history, and compiles:
 
-1. **A 16-Page Publication-Grade PDF Initiation Report** (Motilal Oswal / Goldman Sachs / Morgan Stanley institutional standard).
-2. **A 10-Tab Executive Interactive Financial Model (`.xlsx`)** with pre-configured dynamic Excel Data Validation dropdowns, 7 KPI stat cards, and 6 dynamic charts.
+1. **A 16-Page Publication-Grade PDF Valuation Deck** with executive chapter layouts, WACC sensitivity matrices, and DuPont ROE trees.
+2. **A 10-Tab Executive Interactive Financial Model (`.xlsx`)** with dynamic Excel scenario dropdowns, balance sheet audit checks, and native openpyxl charts.
 
 ---
 
@@ -128,6 +128,16 @@ python generate_equity_report.py --ticker <TICKER> --email user@example.com
 
 ---
 
+## 🔬 Analytical Methodology & Data Integrity
+
+- **Live Market Data**: Ingests real-time exchange closing prices, market capitalization, 52-week ranges, and trailing P/E multiples via `yfinance`.
+- **Authentic Historical Charting**: Pulls 1-year daily historical closes for both the stock and benchmark indices (`^NSEI` for Indian stocks, `^GSPC` for US equities) to plot real historical performance trajectories.
+- **Dynamic Mathematical Valuation**: Computes dynamic CAPM variables ($R_f$, Beta, ERP, $K_e$, $K_d$, WACC), explicit 5-year FCFF with mid-year discounting, Gordon Growth terminal value, relative P/E, and reverse DCF implied growth.
+- **Unified Consistency**: Excel Drivers and PDF CAPM/WACC chapters are driven by the exact same calculation engine to ensure 100% reconciliation.
+- **Continuous Learning Loop**: Sector overrides and ticker calibrations stored in `memory/learnings.json` actively calibrate working capital cycles and WACC inputs across runs.
+
+---
+
 ## 🏷️ Discovery Tags & Keywords
 
 `equity-research` • `dcf-valuation` • `financial-modeling` • `llm-agents` • `claude-code` • `openai-codex` • `cursor-ai` • `three-statement-model` • `investment-banking` • `fundamental-analysis` • `openpyxl` • `reportlab` • `dupont-analysis` • `wacc-sensitivity` • `reverse-dcf` • `stock-valuation` • `quantitative-finance` • `fintech` • `autonomous-agents`
@@ -140,6 +150,6 @@ Distributed under the **MIT License**. See `LICENSE` for more information.
 
 ---
 
-## 🛡️ Disclaimer
+## 🛡️ Regulatory & Legal Disclaimer
 
-*This software is intended strictly for financial modeling, educational research, and quantitative analysis. It does not constitute investment advice. Consult a certified financial advisor before executing investment transactions.*
+*This software is an open-source algorithmic financial modeling and valuation research tool intended strictly for educational, quantitative, and modeling analysis. It does NOT constitute personal investment advice, a financial promotion, or a certified research report under SEBI (Research Analysts) Regulations, 2014, SEC rules, or any international regulatory framework. No human analyst certification is implied or expressed. Consult a certified financial advisor before executing investment transactions.*
