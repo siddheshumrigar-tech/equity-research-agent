@@ -3,6 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Code Style: Institutional](https://img.shields.io/badge/Standard-Tier--1%20Institutional-1A365D.svg)]()
+[![AI Agents](https://img.shields.io/badge/AI%20Agents-Claude%20%7C%20Codex%20%7C%20Cursor-8A2BE2.svg)]()
+[![Model](https://img.shields.io/badge/Excel-10--Tab%20Tesla--Style-217346.svg)]()
+[![Report](https://img.shields.io/badge/ReportLab-16--Page%20Vector%20PDF-C70039.svg)]()
 
 An autonomous, production-grade financial valuation and equity research agent. Automatically fetches exchange market data, computes comprehensive financial statement models, performs multi-method valuation, generates high-resolution Matplotlib charts, and compiles:
 
@@ -122,6 +125,12 @@ To optionally dispatch the output `.xlsx` and `.pdf` to an email address:
 ```bash
 python generate_equity_report.py --ticker <TICKER> --email user@example.com
 ```
+
+---
+
+## 🏷️ Discovery Tags & Keywords
+
+`equity-research` • `dcf-valuation` • `financial-modeling` • `llm-agents` • `claude-code` • `openai-codex` • `cursor-ai` • `three-statement-model` • `investment-banking` • `fundamental-analysis` • `openpyxl` • `reportlab` • `dupont-analysis` • `wacc-sensitivity` • `reverse-dcf` • `stock-valuation` • `quantitative-finance` • `fintech` • `autonomous-agents`
 
 ---
 
