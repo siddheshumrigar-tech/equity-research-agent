@@ -1563,6 +1563,7 @@ def generate_banking_excel_model(data: dict, output_path: str):
     # ── TAB 1B: BANKING DASHBOARD (EXECUTIVE INSTITUTIONAL ARCHITECTURE) ──
     sector_info = {"type": "Banking & Financial Services", "is_bank": True}
     ws_eng = wb.create_sheet(title="Dashboard_Engine")
+    ws_eng.sheet_state = 'hidden'
     ws_dash = wb.create_sheet(title="Dashboard", index=1)
     attach_executive_banking_dashboard(ws_dash, ws_eng, data, sector_info, ws_is, ws_bs, ws_aq, ws_cap, ws_loans, ws_pb, ws_ddm)
     wb.calculation.calcMode = 'auto'
@@ -2447,6 +2448,7 @@ def generate_corporate_excel_model(data: dict, output_path: str, sector_info: di
 
     # TAB 1B: DASHBOARD (EXECUTIVE INSTITUTIONAL ARCHITECTURE)
     ws_eng = wb.create_sheet(title="Dashboard_Engine")
+    ws_eng.sheet_state = 'hidden'
     ws_dash = wb.create_sheet(title="Dashboard", index=1)
     attach_executive_corporate_dashboard(ws_dash, ws_eng, data, sector_info, ws_is, ws_cf, ws_ppe, ws_seg, ws_dcf, ws_bs, ws_wc)
     wb.calculation.calcMode = 'auto'
