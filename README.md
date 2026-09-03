@@ -32,10 +32,10 @@ Whenever a research job is triggered, the system coordinates four specialized su
 └──────────────┘   └──────────────┘    └──────────────┘    └──────────────┘
 ```
 
-1. **Live Market Data Scout:** Extracts real-time NSE closing ticks, CMP, 52-week High/Low, Market Capitalization, Shares Outstanding, Trailing P/E, and Audited Annual Turnover.
+1. **Live Market Data Scout:** Extracts real-time exchange closing ticks, CMP, 52-week High/Low, Market Capitalization, Shares Outstanding, Trailing P/E, and Audited Annual Turnover.
 2. **Dynamic Financial Modeler:** Resolves Sector DNA, compiles the 10-tab articulated model, applies OpenXML `<c:manualLayout>` injections, and formats numbers strictly to standard OpenXML specifications (zero Excel repair warnings).
 3. **Publication-Grade PDF Compiler:** Produces 7 vector charts and assembles a 16-page ReportLab initiation report with dynamic headers and zero font rendering glitches.
-4. **QA & Multi-Channel Dispatcher:** Verifies Balance Sheet zero-audit checks (`Assets - (Liabilities + Equity) = 0.00`), builds mobile executive digests, and triggers SMTP delivery.
+4. **QA & Verification Gateway:** Verifies Balance Sheet zero-audit checks (`Assets - (Liabilities + Equity) = 0.00`), builds mobile executive digests, and outputs directly into your local setup.
 
 ---
 
@@ -47,7 +47,7 @@ The agent includes an autonomous, persistent learning system that starts complet
 - **`memory/memory_manager.py`**: Built-in memory manager that reads historical calibrations before generating models and logs completed runs.
 - **Teaching the Agent via CLI**:
   ```bash
-  python generate_equity_report.py --ticker TCS.NS --learn "sector:IT:dio=0"
+  python generate_equity_report.py --ticker <TICKER> --learn "sector:IT:dio=0"
   ```
 
 ---
@@ -56,18 +56,18 @@ The agent includes an autonomous, persistent learning system that starts complet
 
 The agent automatically resolves the target company's business archetype:
 
-### 1. IT Services & Digital Tech Suite (e.g. TCS, Infosys, HCL Tech, Wipro)
+### 1. IT Services & Digital Tech Suite (Software, Consulting, Cloud & Managed Services)
 - **Zero Physical Inventory**: Working capital correctly sets `Inventory Days (DIO)` to `0.0 Days (N/A - Services)` and models `Unbilled Revenue Days` (~28 days).
 - **Service P&L Cost Breakdown**: Replaces material COGS with `Employee Benefit Expenses (Personnel)` (~56% of revenue) and `Subcontracting & SG&A Overheads` (~20%).
 - **Asset-Light DuPont ROE**: Reflects authentic tech capital efficiency (~45%–50% ROE) driven by zero debt, high asset turnover, and high dividend payouts.
 
-### 2. Corporate, Industrials & Consumer DCF Suite (e.g. Reliance, Titan, ITC, Tata Motors)
+### 2. Corporate, Industrials & Consumer DCF Suite (Manufacturing, Energy, Consumer Goods, Auto)
 - **3-Statement Articulated Model**: Articulated 8-year Income Statement, Balance Sheet, and Cash Flow Statement with automated balance checks.
 - **Fixed Asset & PP&E Schedule**: Capex roll-forward, gross block, and depreciation engine.
 - **Working Capital & Cash Conversion Cycle (CCC)**: DSO, DIO, DPO days driving trade cycle.
 - **Valuation Engines**: 10-Year Explicit Unlevered Discounted Cash Flow (DCF), Reverse DCF Implied Expectations, Sum-of-the-Parts (SOTP) Valuation, and 5-Method Football Field Matrix.
 
-### 3. Banking & BFSI Valuation Suite (e.g. HDFC Bank, ICICI Bank, SBI, Kotak)
+### 3. Banking & BFSI Valuation Suite (Commercial Banking, Retail Lending, NBFCs)
 - **Loan Portfolio Roll-Forward**: Retail, Wholesale, SME, Agriculture breakdown.
 - **NII & NIM Margin Engine**: Net Interest Income, Yield on Advances, Cost of Funds.
 - **Asset Quality (NPA) Module**: Gross NPA %, Net NPA %, Provision Coverage Ratio (PCR).
@@ -102,17 +102,25 @@ pip install -r requirements.txt
 ```
 
 ### 3. Generate Complete Institutional Package
-```bash
-# Research an IT Services Company (e.g. TCS)
-python generate_equity_report.py --ticker TCS.NS --name "Tata Consultancy Services Limited" --sector IT_SERVICES
+Works universally for **ANY** stock ticker on NSE/BSE or Global Exchanges:
 
-# Research a Conglomerate (e.g. Reliance)
-python generate_equity_report.py --ticker RELIANCE.NS --name "Reliance Industries Limited" --sector Energy
+```bash
+# General Syntax:
+python generate_equity_report.py --ticker <TICKER> --name "<COMPANY_NAME>" --sector <SECTOR>
+
+# Example (IT / Tech):
+python generate_equity_report.py --ticker <TICKER> --name "<COMPANY_NAME>" --sector IT_SERVICES
+
+# Example (Industrials / Energy):
+python generate_equity_report.py --ticker <TICKER> --name "<COMPANY_NAME>" --sector Industrials
 ```
 
+*By default, the agent saves all files to `./output/` and prints the full executive digest directly into your terminal or chat setup (e.g. Claude Code, Codex, Cursor).*
+
 ### 4. Optional Email Dispatch
+To optionally dispatch the output `.xlsx` and `.pdf` to an email address:
 ```bash
-python generate_equity_report.py --ticker RELIANCE.NS --email your-email@example.com
+python generate_equity_report.py --ticker <TICKER> --email user@example.com
 ```
 
 ---

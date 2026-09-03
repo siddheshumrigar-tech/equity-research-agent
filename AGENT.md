@@ -6,10 +6,10 @@ Your mission is to produce **Tier-1 Institutional Equity Research & Valuation Su
 
 ## 🤖 4-AGENT ORCHESTRATION PIPELINE
 When triggered, the agent coordinates 4 specialized roles in sequence:
-1. **Agent 1: Live Market Scout**: Pulls live exchange ticks, 52-week High/Low, Market Capitalization, Shares Outstanding, Trailing P/E, and Audited Revenue via `yfinance` & NSE APIs.
+1. **Agent 1: Live Market Scout**: Pulls live exchange ticks, 52-week High/Low, Market Capitalization, Shares Outstanding, Trailing P/E, and Audited Revenue via `yfinance` & exchange APIs.
 2. **Agent 2: 10-Tab Dynamic Financial Modeler**: Generates the 3-statement integrated model (`Income Statement`, `Balance Sheet`, `Cash Flow`, `Working Capital`, `PP&E Schedule`) with a Tesla-style executive dashboard, dynamic `E6` year switcher, and automated OpenXML manual layout styling.
 3. **Agent 3: Publication-Grade PDF Compiler**: Compiles 7 high-resolution Matplotlib vector charts and a 16-page ReportLab PDF research report with high information density, dynamic sector chapters, and running headers.
-4. **Agent 4: QA, Verification & Delivery Gateway**: Validates zero `#REF!` errors, checks Balance Sheet zero-audit articulation (`Assets - (Liab + Equity) = 0.00`), formats mobile WhatsApp digests, and dispatches files via SMTP.
+4. **Agent 4: QA, Verification & Delivery Gateway**: Validates zero `#REF!` errors, checks Balance Sheet zero-audit articulation (`Assets - (Liab + Equity) = 0.00`), formats mobile executive digests, and delivers artifacts directly into the user's workspace.
 
 ## 🧠 CONTINUOUS LEARNING LOOP (`memory/`)
 The agent features an autonomous, persistent learning bank that starts from a clean slate (`0`):
@@ -17,7 +17,7 @@ The agent features an autonomous, persistent learning bank that starts from a cl
 - **`memory/memory_manager.py`**: Reads historical calibrations before generating models and writes new learnings after each completed research run.
 - **Teach the Agent via CLI**:
   ```bash
-  python generate_equity_report.py --ticker TCS.NS --learn "sector:IT:dio=0"
+  python generate_equity_report.py --ticker <TICKER> --learn "sector:IT:dio=0"
   ```
 
 ## 🎯 MANDATORY 10-TAB FINANCIAL MODEL ARCHITECTURE
@@ -35,20 +35,20 @@ Whenever generating equity models, execute `python generate_equity_report.py` to
 
 ## 🧬 SECTOR DNA ADAPTIVE ARCHETYPE ENGINE
 Automatically routes to the appropriate modeling archetype based on ticker and sector:
-1. **IT Services & Digital Tech** (TCS, Infosys, HCL Tech): Zero physical inventory (DIO = 0), Unbilled Revenue Days (28 days), Employee Benefit Expenses as primary cost of delivery (~56%), realistic asset-light ROE (45%–50%).
-2. **Retail & Lifestyle** (Titan, Trent, Kalyan): Store count additions, SSSG %, and Ind AS 116 Lease capitalization.
-3. **FMCG Staples** (HUL, ITC, Nestlé): Underlying Volume Growth (UVG), Urban vs. Rural mix, and distribution reach.
-4. **Automotive / OEM** (Tata Motors, Maruti, M&M): Vehicle wholesale dispatch volumes $\times$ ASP realization.
-5. **Banking & BFSI** (HDFC Bank, ICICI, SBI): Branch network, Net Interest Margin (NIM), Advances growth, and DDM/Excess ROE matrix.
+1. **IT Services & Digital Tech**: Zero physical inventory (DIO = 0), Unbilled Revenue Days (28 days), Employee Benefit Expenses as primary cost of delivery (~56%), realistic asset-light ROE (45%–50%).
+2. **Retail & Lifestyle**: Store count additions, SSSG %, and Ind AS 116 Lease capitalization.
+3. **FMCG Staples**: Underlying Volume Growth (UVG), Urban vs. Rural mix, and distribution reach.
+4. **Automotive / OEM**: Vehicle wholesale dispatch volumes $\times$ ASP realization.
+5. **Banking & BFSI**: Branch network, Net Interest Margin (NIM), Advances growth, and DDM/Excess ROE matrix.
 
 ## 🚀 EXECUTION COMMANDS
 ```bash
-# Basic Execution
-python generate_equity_report.py --ticker TCS.NS --name "Tata Consultancy Services Limited" --sector IT_SERVICES
+# Basic Execution (Saves locally to ./output/)
+python generate_equity_report.py --ticker <TICKER> --name "<COMPANY_NAME>" --sector <SECTOR>
 
 # Execution with Email Dispatch
-python generate_equity_report.py --ticker RELIANCE.NS --name "Reliance Industries Limited" --sector Energy --email client@example.com
+python generate_equity_report.py --ticker <TICKER> --name "<COMPANY_NAME>" --sector <SECTOR> --email user@example.com
 
 # Record a New Rule into Continuous Learning Memory
-python generate_equity_report.py --ticker INFY.NS --learn "sector:IT_SERVICES:employee_cost=0.56"
+python generate_equity_report.py --ticker <TICKER> --learn "sector:IT_SERVICES:employee_cost=0.56"
 ```
