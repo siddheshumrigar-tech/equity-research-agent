@@ -1,6 +1,6 @@
-from openpyxl.chart.layout import Layout, ManualLayout
 from openpyxl.chart.label import DataLabelList
 from openpyxl.chart.series import DataPoint
+from openpyxl.chart.layout import Layout, ManualLayout
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -380,6 +380,67 @@ def attach_executive_corporate_dashboard(ws_dash, ws_eng, data, sector_info, ws_
     c5 = BarChart()
     c5.type = "col"
     c5.style = 10
+    c5.title = "Trade Cycle Days"
+    c5.width = 11.0
+    c5.height = 7.0
+    c5.legend = None
+
+    data_c5 = Reference(ws_eng, min_col=2, min_row=30, max_row=32)
+    cats_c5 = Reference(ws_eng, min_col=1, min_row=30, max_row=32)
+    c5.add_data(data_c5, from_rows=False, titles_from_data=False)
+    c5.set_categories(cats_c5)
+    c5.series[0].graphicalProperties.solidFill = "70AD47"
+    c5.dataLabels = DataLabelList()
+    c5.dataLabels.showVal = True
+    c5.dataLabels.showCatName = False
+    c5.dataLabels.showSerName = False
+    c5.dataLabels.position = "outEnd"
+    c5.plot_area.layout = Layout(manualLayout=ManualLayout(x=0.12, y=0.15, w=0.82, h=0.72, xMode="edge", yMode="edge"))
+    ws_dash.add_chart(c5, "J25")
+
+    # Chart 6: Liquidity Ratios (Cols O to S, Rows 25 to 40)
+    c6 = BarChart()
+    c6.type = "col"
+    c6.style = 10
+    c6.title = "Liquidity Ratios"
+    c6.width = 9.5
+    c6.height = 7.0
+    c6.legend = None
+
+    data_c6 = Reference(ws_eng, min_col=2, min_row=36, max_row=38)
+    cats_c6 = Reference(ws_eng, min_col=1, min_row=36, max_row=38)
+    c6.add_data(data_c6, from_rows=False, titles_from_data=False)
+    c6.set_categories(cats_c6)
+    c6.series[0].graphicalProperties.solidFill = "70AD47"
+    c6.dataLabels = DataLabelList()
+    c6.dataLabels.showVal = True
+    c6.dataLabels.showCatName = False
+    c6.dataLabels.showSerName = False
+    c6.dataLabels.position = "outEnd"
+    c6.plot_area.layout = Layout(manualLayout=ManualLayout(x=0.12, y=0.15, w=0.82, h=0.72, xMode="edge", yMode="edge"))
+    ws_dash.add_chart(c6, "O25")
+
+    # Status Box (Cols T to X, Rows 25 to 40)
+    for r in range(25, 41):
+        for c in range(20, 25):
+            ws_dash.cell(r, c).fill = tesla_light_green
+            ws_dash.cell(r, c).border = card_border
+
+    ws_dash.merge_cells("T26:X27")
+    ws_dash["T26"] = "INVESTMENT STATUS"
+    ws_dash["T26"].font = Font(name="Calibri", size=10, bold=True, color="385723")
+    ws_dash["T26"].alignment = Alignment(horizontal="center", vertical="center")
+
+    ws_dash.merge_cells("T28:X33")
+    ws_dash["T28"] = "BUY"
+    ws_dash["T28"].font = Font(name="Calibri", size=26, bold=True, color="385723")
+    ws_dash["T28"].alignment = Alignment(horizontal="center", vertical="center")
+
+    ws_dash.merge_cells("T34:X38")
+    ws_dash["T34"] = "Upside Potential: +18.0%\nTarget: Rs. 950.02"
+    ws_dash["T34"].font = Font(name="Calibri", size=9.5, bold=True, color="385723")
+    ws_dash["T34"].alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
 
 
 
