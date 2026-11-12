@@ -3,7 +3,22 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 
-Give it an NSE symbol and it produces, from **reported Screener.in data**:
+**Turn an NSE or BSE ticker into a broker-style equity research report, a live Excel valuation model and a DCF, built on reported Screener.in financials and live market data.**
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/assets/screenshots/maruti_report_page1.png" alt="Maruti Suzuki (MARUTI) research report, page 1"></td>
+    <td width="50%"><img src="docs/assets/screenshots/tcs_report_page1.png" alt="Tata Consultancy Services (TCS) research report, page 1"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Maruti Suzuki (MARUTI), page 1</sub></td>
+    <td align="center"><sub>Tata Consultancy Services (TCS), page 1</sub></td>
+  </tr>
+</table>
+
+<sub>Real-data snapshots from a live run on 12 November 2026. Figures change with each run.</sub>
+
+Give it an NSE or BSE ticker and it returns, built from **reported Screener.in data**:
 
 1. **An Excel financial model** with a Tesla-style executive Dashboard in the company's own brand colour, a
    3-statement model (reported actuals + 5-year forecast formulas), a 3-stage DCF, valuation summary, peers and
