@@ -1,0 +1,45 @@
+{
+  "as_of": "2026-11-11",
+  "gsec_10y_yield": 0.0722,
+  "gsec_10y_source": "India 10-year G-sec yield 7.22% on 11-Nov-2026 (Trading Economics)",
+  "india_default_spread": 0.0187,
+  "india_default_spread_source": "Damodaran country risk table (Jan 2026): India Baa3 adjusted default spread 1.87%",
+  "risk_free_rate": 0.0535,
+  "risk_free_source": "INR risk-free rate = 10Y G-sec yield 7.22% - India default spread 1.87% (Damodaran method; avoids counting country risk twice with the total ERP)",
+  "equity_risk_premium": 0.0708,
+  "equity_risk_premium_source": "Damodaran country risk table (Jan 2026): total equity risk premium for India 7.08% (mature market ERP + country risk premium 2.85%)",
+  "terminal_growth": 0.05,
+  "terminal_growth_source": "Long-run nominal INR growth assumption; kept below the risk-free rate",
+  "benchmark_index": "^NSEI",
+  "beta_min": 0.5,
+  "beta_max": 2.0,
+  "beta_default": 1.0,
+  "beta_blume": true,
+  "forecast_years": 5,
+  "fade_years": 5,
+  "roic_cap": 1.0,
+  "ronic_premium_share": {"base": 0.5, "bull": 0.75, "bear": 0.25},
+  "cwip_years": 2,
+  "wc_glide_years": 2,
+  "target_weights": {"dcf": 0.5, "pe": 0.25, "ev_ebitda": 0.25},
+  "rating_thresholds": [
+    [0.15, "BUY"],
+    [0.05, "ADD"],
+    [-0.05, "REDUCE"]
+  ],
+  "rating_floor": "SELL",
+  "scenarios": {
+    "growth_offset": 0.03,
+    "margin_offset": 0.015,
+    "capex_mult": {"bull": 0.9, "bear": 1.1},
+    "probabilities": {"bull": 0.25, "base": 0.5, "bear": 0.25}
+  },
+  "checks": {
+    "tv_share_max": 0.75,
+    "dcf_relative_ratio_max": 2.0,
+    "upside_abs_max": 0.40,
+    "stale_days": 90,
+    "ytd_gap_pp": 0.05
+  },
+  "max_peers": 6
+}

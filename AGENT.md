@@ -1,54 +1,100 @@
-# 🏛️ Autonomous Institutional Equity Research Analyst
+# Equity Research Agent - instructions for AI agents (Hermes, Claude, Codex, Cursor)
 
-## Role & Mission
-You are the **Lead Institutional Equity Research Analyst & Valuation Specialist**.
-Your mission is to produce **Tier-1 Institutional Equity Research & Valuation Suites** (matching Goldman Sachs, Morgan Stanley, and Motilal Oswal) for Indian equities (NSE/BSE) and Global markets.
+Use this repository when a user asks for an equity research report, financial model,
+valuation or "dashboard like the Tesla model" for an **Indian listed company (NSE/BSE)**.
+The tool builds every number from reported data. **You** (the host agent) write the
+qualitative research and may adjust drivers, but only with sources.
 
-## 🤖 4-AGENT ORCHESTRATION PIPELINE
-When triggered, the agent coordinates 4 specialized roles in sequence:
-1. **Agent 1: Live Market Scout**: Pulls live exchange ticks, 52-week High/Low, Market Capitalization, Shares Outstanding, Trailing P/E, and Audited Revenue via `yfinance` & exchange APIs.
-2. **Agent 2: 10-Tab Dynamic Financial Modeler**: Generates the 3-statement integrated model (`Income Statement`, `Balance Sheet`, `Cash Flow`, `Working Capital`, `PP&E Schedule`) with a Tesla-style executive dashboard, dynamic `E6` year switcher, and automated OpenXML manual layout styling.
-3. **Agent 3: Publication-Grade PDF Compiler**: Compiles 7 high-resolution Matplotlib vector charts and a 16-page ReportLab PDF research report with high information density, dynamic sector chapters, and running headers.
-4. **Agent 4: QA, Verification & Delivery Gateway**: Validates zero `#REF!` errors, checks Balance Sheet zero-audit articulation (`Assets - (Liab + Equity) = 0.00`), formats mobile executive digests, and delivers artifacts directly into the user's workspace.
+## 1. Identify the NSE symbol
 
-## 🧠 CONTINUOUS LEARNING LOOP (`memory/`)
-The agent features an autonomous, persistent learning bank that starts from a clean slate (`0`):
-- **`memory/learnings.json`**: Persists learned sector nuances, custom working capital baselines, and valuation calibrations across runs.
-- **`memory/memory_manager.py`**: Reads historical calibrations before generating models and writes new learnings after each completed research run.
-- **Teach the Agent via CLI**:
-  ```bash
-  python generate_equity_report.py --ticker <TICKER> --learn "sector:IT:dio=0"
-  ```
+The tool needs the exact symbol used in the Screener.in URL
+(`https://www.screener.in/company/<SYMBOL>/`). Examples: Tata Technologies `TATATECH`,
+Asian Paints `ASIANPAINT`, Reliance Industries `RELIANCE`, Infosys `INFY`. If you are not
+sure, look it up on nseindia.com or ask the user. US and other non-Indian stocks are not
+supported; banks and NBFCs are rejected (exit code 3).
 
-## 🎯 MANDATORY 10-TAB FINANCIAL MODEL ARCHITECTURE
-Whenever generating equity models, execute `python generate_equity_report.py` to generate the full **10-Tab Dynamic Financial Model (.xlsx)**:
-- **Tab 1: `Cover Page`** — Professional cover with interactive `=HYPERLINK()` Table of Contents.
-- **Tab 2: `Dashboard`** — Executive snapshot, embedded native openpyxl visual charts (Revenue/EBITDA bar chart & margin line chart), Multi-Model Valuation Football Field matrix, Staggered Buying Tranches, and Balance Sheet Audit check status.
-- **Tab 3: `Drivers`** — Centralized Master Assumptions with live `=CHOOSE(C4, 1=Base, 2=Bull, 3=Bear)` scenario switch driving 100% of the workbook.
-- **Tab 4: `Segment Breakdown`** — Sector-specific division-level revenue, operating margins, and unit capacity metrics (resolved via Sector DNA Engine).
-- **Tab 5: `Income Statement`** — 8-Year articulated P&L (FY23–FY30E) with dynamic Common-Size % of Sales lines.
-- **Tab 6: `PP&E Schedule`** — Fixed Asset roll-forward schedule (Opening + Capex - D&A = Net Block) and Ind AS 116 Right-of-Use (ROU) assets.
-- **Tab 7: `Working Capital`** — DSO, DIO, DPO days driving Receivables, Inventory, Payables, and Cash Conversion Cycle (CCC).
-- **Tab 8: `Cash Flow`** — CFO, CFI, CFF, Closing Cash, and automated cash deficit financing loop.
-- **Tab 9: `Balance Sheet`** — Fully articulated Assets, Liabilities, and Equity with automated `=ROUND(Assets - (Liab + Equity), 2)` zero-balance audit verifier.
-- **Tab 10: `DCF Valuation`** — Mid-Year Discounting ($t=0.5, 1.5, 2.5$), Dual Terminal Value (Gordon Growth + Exit Multiple), Enterprise-to-Equity bridge, and 5x6 WACC vs g sensitivity matrix.
+## 2. Step 1 - draft run
 
-## 🧬 SECTOR DNA ADAPTIVE ARCHETYPE ENGINE
-Automatically routes to the appropriate modeling archetype based on ticker and sector:
-1. **IT Services & Digital Tech**: Zero physical inventory (DIO = 0), Unbilled Revenue Days (28 days), Employee Benefit Expenses as primary cost of delivery (~56%), realistic asset-light ROE (45%–50%).
-2. **Retail & Lifestyle**: Store count additions, SSSG %, and Ind AS 116 Lease capitalization.
-3. **FMCG Staples**: Underlying Volume Growth (UVG), Urban vs. Rural mix, and distribution reach.
-4. **Automotive / OEM**: Vehicle wholesale dispatch volumes $\times$ ASP realization.
-5. **Banking & BFSI**: Branch network, Net Interest Margin (NIM), Advances growth, and DDM/Excess ROE matrix.
-
-## 🚀 EXECUTION COMMANDS
 ```bash
-# Basic Execution (Saves locally to ./output/)
-python generate_equity_report.py --ticker <TICKER> --name "<COMPANY_NAME>" --sector <SECTOR>
-
-# Execution with Email Dispatch
-python generate_equity_report.py --ticker <TICKER> --name "<COMPANY_NAME>" --sector <SECTOR> --email user@example.com
-
-# Record a New Rule into Continuous Learning Memory
-python generate_equity_report.py --ticker <TICKER> --learn "sector:IT_SERVICES:employee_cost=0.56"
+pip install -r requirements.txt          # first time only
+python generate_equity_report.py --ticker <SYMBOL>
 ```
+
+Writes to `output/`: the Excel model, a **draft** PDF (watermarked), `<SYMBOL>_summary.json`
+and `<SYMBOL>_research_pack.json`.
+
+## 3. Step 2 - research and write two files
+
+Read `<SYMBOL>_research_pack.json`. It contains the model numbers, the **flags you must
+answer** (`flags_to_answer`), peers, quarterly results, shareholding, technicals, the
+`tokens` you may use in text, and the schemas (`narrative_schema`, `analyst_inputs_schema`).
+
+Research the company from primary sources first (annual report, earnings-call transcripts,
+investor presentations, exchange filings), then industry and news sources. Then write:
+
+* `output/<SYMBOL>_narrative.json` (required): headline, at least three thesis points,
+  company overview, business model, management, industry, market share, Porter's five
+  forces (rating + evidence each), SWOT, PESTLE, ESG, risks (impact + mitigant),
+  corporate actions, `flag_responses` for every high flag, and `sources`. Each thesis point
+  may carry a one-sentence `summary` (used on page 1; otherwise `text` is used) and an
+  `exhibit` keyword (`rev_ebitda`, `margins`, `fcf`, `roe`, `wc_days`, `peers_pe`, `price`)
+  that puts a chart next to it. Sections you leave out are left out of the PDF.
+* `output/<SYMBOL>_analyst_inputs.json` (optional): per-year driver overrides (e.g.
+  management growth guidance), terminal growth / RONIC, a peer list, sum-of-the-parts
+  segment values, segment revenue shares and catalysts.
+
+Writing rules (enforced or linted by `--render`):
+
+1. Be specific to this company. Generic sector statements are not acceptable on their own.
+2. Cite every fact with `[n]` matching `sources[].id` (each source: type, title, url or
+   document, date). Unknown citations are errors.
+3. Never type model numbers. Use tokens like `{{target_price}}`, `{{wacc}}`,
+   `{{revenue_latest}}`. Unknown tokens are errors; uncited numbers produce lint warnings.
+4. Change numbers only in `analyst_inputs.json`, each entry with a `source`. Entries
+   without a valid source are rejected. Percentages are decimals (0.12, not 12).
+5. Answer every high-severity flag in `flag_responses`: explain why the call stands, or
+   fix the inputs and render again.
+
+## 4. Step 3 - final render
+
+```bash
+python generate_equity_report.py --ticker <SYMBOL> --render
+```
+
+Re-uses the cached data (numbers do not move between draft and final), applies the analyst
+inputs, validates the narrative and writes the final Excel, PDF and summary.
+
+## 5. Read the result
+
+Read `output/<SYMBOL>_summary.json`:
+
+* `status`, `report_stage` (`draft` / `final`)
+* `valuation.target_price`, `valuation.upside`, `valuation.expected_total_return`,
+  `valuation.rating` (BUY / ADD / REDUCE / SELL; `verdict` is the same value),
+  `valuation.target_method`, `valuation.weights`, `valuation.scenarios`
+* `flags` and `high_flags_unanswered`
+* `files.excel`, `files.pdf`, `files.research_pack`
+* `warnings`: data notes and narrative lint you must pass on to the user
+
+| Exit code | Meaning | What to do |
+|---|---|---|
+| 0 | Success | Share files, rating, target, return, flags and warnings |
+| 2 | Symbol not found | Ask for the correct NSE symbol |
+| 3 | Bank / NBFC / financial company | Not supported yet |
+| 4 | Screener data failed validation | Report the message; do not build numbers yourself |
+| 5 | Network failure | Retry later |
+| 6 | narrative.json / analyst_inputs.json invalid or missing | Fix the listed errors and run `--render` again |
+| 1 | Unexpected error | Report the traceback |
+
+## 6. Method in one paragraph
+
+Drivers are 3-year historical averages (working-capital days glide from the last year);
+bull / bear move growth, margin and capex. Valuation: 3-stage FCFF DCF (5 explicit years,
+5 fade years toward a terminal return on new capital, value-driver terminal value) rolled
+forward 12 months, P/E vs the company's own 5-year history and EV/EBITDA vs the Screener
+peer median, both on next-twelve-months earnings; weights 50 / 25 / 25 (config). Rating on
+expected total return: BUY >= 15%, ADD >= 5%, REDUCE >= -5%, else SELL. Credibility checks
+flag a terminal value above 75% of EV, DCF vs multiples more than 2x apart, |upside| above
+40%, negative FCFF, an unreachable reverse DCF, clamped drivers, stale market inputs and
+quarterly growth far from the forecast. Market inputs live in `config/market.json`; update
+them when they go stale. The report is not investment advice.

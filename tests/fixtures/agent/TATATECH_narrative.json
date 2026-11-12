@@ -1,0 +1,49 @@
+{
+  "symbol": "TATATECH",
+  "prepared_by": "TEST FIXTURE - illustrative text to exercise the renderer, not research",
+  "as_of": "2026-11-12",
+  "headline": "Test fixture: growth recovery priced in; {{rating}} with a {{target_price}} target",
+  "thesis_points": [
+    {"title": "Sample claim one", "summary": "Sample summary one for page 1 [1].",
+     "text": "Revenue was {{revenue_latest}} in {{latest_fy}} and the sample source says client spending is recovering [1].",
+     "exhibit": "rev_ebitda"},
+    {"title": "Sample claim two", "text": "Current ROIC of {{roic}} is above the {{wacc}} cost of capital [2].",
+     "exhibit": "roe"},
+    {"title": "Sample claim three", "text": "At {{price}} the stock trades on {{trailing_pe}} trailing earnings against a {{mean_pe}} five-year mean.",
+     "exhibit": "peers_pe"}
+  ],
+  "company_overview": "Sample overview text for the test fixture [1].",
+  "business_model": "Sample business model text [1].",
+  "management": "Sample management text [2].",
+  "industry": "Sample industry text with an uncited figure of 450 to trigger the lint.",
+  "market_share": [
+    {"company": "Tata Technologies", "share": 0.12, "metric": "Sample share measure", "source_ids": [1]},
+    {"company": "Sample Peer A", "share": 0.20, "metric": "Sample share measure", "source_ids": [1]},
+    {"company": "Sample Peer B", "share": 0.08, "metric": "Sample share measure", "source_ids": [2]}
+  ],
+  "porter": {
+    "new_entrants": {"rating": "low", "evidence": "Sample evidence [1]"},
+    "supplier_power": {"rating": "moderate", "evidence": "Sample evidence [1]"},
+    "buyer_power": {"rating": "high", "evidence": "Sample evidence [2]"},
+    "substitutes": {"rating": "low", "evidence": "Sample evidence [2]"},
+    "rivalry": {"rating": "high", "evidence": "Sample evidence [2]"}
+  },
+  "swot": {"strengths": ["Sample strength [1]"], "weaknesses": ["Sample weakness [1]"],
+           "opportunities": ["Sample opportunity [2]"], "threats": ["Sample threat [2]"]},
+  "pestle": {"political": "Sample political factor [1]", "economic": "Sample economic factor [2]",
+             "technological": "Sample technology factor [1]"},
+  "esg": "Sample ESG text [1].",
+  "risks": [{"risk": "Client concentration", "impact": "Sample impact [1]", "impact_on_tp_pct": -0.10, "mitigant": "Sample"},
+            {"risk": "Sample risk two", "impact": "Sample impact [2]", "impact_on_tp_pct": -0.05, "mitigant": "Sample"}],
+  "corporate_actions": [{"date": "2026-04-01", "event": "Sample acquisition [2]"}],
+  "flag_responses": {
+    "TV_SHARE_HIGH": "Sample response.",
+    "DCF_RELATIVE_DIVERGENCE": "Sample response: the DCF uses trailing growth; see the analyst inputs [1].",
+    "EXTREME_UPSIDE": "Sample response.",
+    "NEGATIVE_FCFF": "Sample response."
+  },
+  "sources": [
+    {"id": 1, "type": "annual_report", "title": "SAMPLE Annual Report FY26", "url": "https://example.com/ar", "date": "2026-06-30"},
+    {"id": 2, "type": "concall", "title": "SAMPLE Q2 FY27 call", "url": "https://example.com/q2", "date": "2026-10-20"}
+  ]
+}

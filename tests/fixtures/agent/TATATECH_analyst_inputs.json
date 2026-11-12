@@ -1,0 +1,27 @@
+{
+  "symbol": "TATATECH",
+  "prepared_by": "TEST FIXTURE - sample values to exercise the code, not research",
+  "as_of": "2026-11-12",
+  "driver_overrides": [
+    {"driver": "sales_growth", "years": {"FY27": 0.12, "FY28": 0.11},
+     "rationale": "Sample: management growth guidance",
+     "source": {"type": "concall", "title": "SAMPLE Q2 FY27 earnings call", "url": "https://example.com/q2fy27",
+                "date": "2026-10-20"}}
+  ],
+  "terminal": {"ronic": 0.18, "rationale": "Sample: asset-light engineering services",
+               "source": {"type": "other", "title": "SAMPLE analyst estimate", "document": "test", "date": "2026-11-12"}},
+  "segments": [
+    {"name": "Services", "revenue_share": 0.78, "ebit_share": 0.85, "period": "FY26",
+     "source": {"type": "annual_report", "title": "SAMPLE Annual Report FY26", "document": "segment note", "date": "2026-06-30"}},
+    {"name": "Technology solutions", "revenue_share": 0.22, "ebit_share": 0.15, "period": "FY26",
+     "source": {"type": "annual_report", "title": "SAMPLE Annual Report FY26", "document": "segment note", "date": "2026-06-30"}}
+  ],
+  "catalysts": [
+    {"date": "2027-01-20", "event": "Q3 FY27 results", "impact": "neutral",
+     "source": {"type": "exchange_filing", "title": "SAMPLE board meeting notice", "url": "https://example.com/notice",
+                "date": "2026-11-01"}},
+    {"date": "Q1 FY28", "event": "Sample programme ramp-up", "impact": "positive",
+     "source": {"type": "concall", "title": "SAMPLE Q2 FY27 earnings call", "url": "https://example.com/q2fy27",
+                "date": "2026-10-20"}}
+  ]
+}
