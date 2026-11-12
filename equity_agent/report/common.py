@@ -43,9 +43,11 @@ class R:
         s = self.nar.text(str(text))
         s = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         # a non-breaking space keeps the marker on the same line as the word it cites
-        return re.sub(r"\s*\[(\d+(?:\s*,\s*\d+)*)\]",
-                      lambda m: f"\u00a0<super><font size=5.5>[{re.sub(r'\s+', '', m.group(1))}]</font></super>",
-                      s)
+        def _cite_repl(m):
+            clean_digits = re.sub(r"\s+", "", m.group(1))
+            return f"\u00a0<super><font size=5.5>[{clean_digits}]</font></super>"
+
+        return re.sub(r"\s*\[(\d+(?:\s*,\s*\d+)*)\]", _cite_repl, s)
 
     def img(self, path: Optional[str], w: float, h: float):
         return Image(path, width=w, height=h) if path else self.P("Chart not available (missing data).", "small")
