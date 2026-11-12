@@ -17,6 +17,13 @@ from .errors import DataValidationError
 from .screener_client import RawCompany, ScheduleItem, ScreenerClient, Table, parse_number
 
 COGS_KEYWORDS = ("material", "raw", "purchase", "stock", "inventor", "power", "fuel", "manufactur", "mfr", "excise")
+# Cost of revenue. For a goods business it is the material and manufacturing items of Screener's expense schedule.
+# When those items average less than SERVICE_COGS_SHARE of total expenses over the last COST_BASIS_WINDOW years
+# (IT, engineering and other service businesses), the staff who deliver the service are the main cost of revenue,
+# so employee cost is counted in cost of revenue as well. The rule uses each company's own cost mix.
+SERVICE_COGS_SHARE = 0.30
+COST_BASIS_WINDOW = 3
+EMPLOYEE_KEYWORDS = ("employee",)
 _MONTHS = {m: i for i, m in enumerate(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)}
 
 
@@ -66,6 +73,7 @@ class CompanyFinancials:
     warnings: List[str] = field(default_factory=list)
     shareholding: Dict[str, List[Optional[float]]] = field(default_factory=dict)  # % by holder class, by quarter
     shareholding_labels: List[str] = field(default_factory=list)
+    cost_basis: str = "goods"  # "goods" (material + manufacturing) or "services" (+ employee cost)
 
     # -- helpers ------------------------------------------------------------ #
     def line(self, key: str) -> List[float]:
@@ -190,6 +198,34 @@ def classify_expense(name: str) -> str:
     return "COGS" if any(k in low for k in COGS_KEYWORDS) else "OPEX"
 
 
+def goods_cost_share(items: List["ExpenseItem"], expenses: List[float], window: int = COST_BASIS_WINDOW) -> Optional[float]:
+    """Average share of material and manufacturing items in total expenses over the last ``window`` years."""
+    n = len(expenses)
+    shares = [sum(it.values[k] for it in items if classify_expense(it.name) == "COGS") / expenses[k]
+              for k in range(max(0, n - window), n) if expenses[k] > 0]
+    return sum(shares) / len(shares) if shares else None
+
+
+def apply_cost_basis(items: List["ExpenseItem"], expenses: List[float]) -> str:
+    """Set each item's kind for cost of revenue and return the basis ("goods" or "services")."""
+    share = goods_cost_share(items, expenses)
+    staff = {id(it) for it in items if any(k in it.name.lower() for k in EMPLOYEE_KEYWORDS)}
+    services = share is not None and share < SERVICE_COGS_SHARE and bool(staff)
+    for it in items:
+        it.kind = "COGS" if classify_expense(it.name) == "COGS" or (services and id(it) in staff) else "OPEX"
+    return "services" if services else "goods"
+
+
+def cost_of_revenue_label(fin: "CompanyFinancials", short: bool = False) -> str:
+    if fin.cost_basis == "services":
+        return "Cost of revenue" if short else "Cost of revenue (material + manufacturing + employee cost)"
+    return "Cost of goods sold" if short else "Cost of goods sold (material + manufacturing)"
+
+
+def opex_label(fin: "CompanyFinancials") -> str:
+    return "Operating expenses (other)" if fin.cost_basis == "services" else "Operating expenses (employee + other)"
+
+
 # --------------------------------------------------------------------------- #
 # build
 # --------------------------------------------------------------------------- #
@@ -270,6 +306,7 @@ def build_financials(raw: RawCompany) -> CompanyFinancials:
     if not expense_items:
         warnings.append("Screener has no expense breakdown; COGS shown as 0 and all expenses as operating expenses.")
         expense_items = [ExpenseItem("Total expenses", "OPEX", list(L["expenses"]))]
+    cost_basis = apply_cost_basis(expense_items, L["expenses"])
     L["cogs"] = [round(sum(it.values[k] for it in expense_items if it.kind == "COGS"), 2) for k in range(len(labels))]
     L["opex"] = [round(e - c, 2) for e, c in zip(L["expenses"], L["cogs"])]
     L["gross_profit"] = [round(s - c, 2) for s, c in zip(L["sales"], L["cogs"])]
@@ -421,6 +458,7 @@ def build_financials(raw: RawCompany) -> CompanyFinancials:
         years=years, period_labels=labels, lines=L, expense_items=expense_items, eps=eps,
         gross_block=gross_block, acc_dep=acc_dep, reported_ratios=rep, ttm=ttm,
         quarters=quarters, quarter_labels=q_labels, warnings=warnings, shareholding=shp, shareholding_labels=shp_labels,
+        cost_basis=cost_basis,
     )
     validate(fin, reported_oli=reported_oli, reported_oai=reported_oai)
     return fin

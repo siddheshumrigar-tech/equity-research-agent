@@ -7,9 +7,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
-
-def _avg(a, b):
-    return (a + b) / 2 if a is not None and b is not None else b
+from ..ratios import annual
 
 
 def key_metrics(res) -> Dict[str, List[Optional[float]]]:
@@ -20,8 +18,6 @@ def key_metrics(res) -> Dict[str, List[Optional[float]]]:
     cat = lambda k, fk=None: list(L[k]) + list(F[fk or k])
     sales, ebitda, npf = cat("sales"), cat("ebitda"), cat("net_profit")
     equity, debt = cat("total_equity"), cat("borrowings")
-    minority = cat("minority_interest")
-    pbt, interest = cat("pbt"), cat("interest")
     payout = list(L["dividend_payout"]) + [res.drivers.value("dividend_payout", fc.scenario, t) for t in range(len(fc.years))]
     eps = [(f.eps[i] if i < n and f.eps[i] is not None else npf[i] / shares) for i in range(len(npf))]
     out: Dict[str, List[Optional[float]]] = {"labels": f.year_labels + fc.year_labels}
@@ -33,11 +29,8 @@ def key_metrics(res) -> Dict[str, List[Optional[float]]]:
     out["pe"] = [f.price / e if e and e > 0 else None for e in eps]
     out["ev_ebitda"] = [v.current_ev / e if e and e > 0 else None for e in ebitda]
     out["pb"] = [f.price / (q / shares) if q and q > 0 else None for q in equity]
-    out["roe"] = [None if i == 0 else (npf[i] / _avg(equity[i - 1], equity[i]) if _avg(equity[i - 1], equity[i]) else None)
-                  for i in range(len(npf))]
-    cap = [q + d + m for q, d, m in zip(equity, debt, minority)]
-    out["roce"] = [None if i == 0 else ((pbt[i] + interest[i]) / _avg(cap[i - 1], cap[i]) if _avg(cap[i - 1], cap[i]) else None)
-                   for i in range(len(npf))]
+    rt = annual(res)
+    out["roe"], out["roce"] = rt["roe"], rt["roce"]
     out["dps"] = [max(p, 0) * po / shares for p, po in zip(npf, payout)]
     out["div_yield"] = [d / f.price for d in out["dps"]]
     cash, inv = cat("cash"), cat("investments")

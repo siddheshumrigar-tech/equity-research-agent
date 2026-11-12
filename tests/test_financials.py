@@ -51,6 +51,17 @@ def test_asian_paints_manufacturer_lines(fin_asian):
     assert fin_asian.shares_cr == pytest.approx(96.0, rel=0.01)
 
 
+def test_cost_of_revenue_follows_the_cost_mix(fin_tata, fin_asian):
+    # Tata Technologies: material is ~21% of expenses -> service cost structure, employee cost is cost of revenue
+    assert fin_tata.cost_basis == "services"
+    kind = {it.name.lower(): it.kind for it in fin_tata.expense_items}
+    assert [kind[k] for k in sorted(kind)] == ["COGS", "COGS", "OPEX"]  # employee, material, other
+    assert fin_tata.lines["cogs"][-1] == pytest.approx(967 + 2737)
+    # Asian Paints: manufacturer, employee cost stays an operating expense
+    assert fin_asian.cost_basis == "goods"
+    assert all(it.kind == "OPEX" for it in fin_asian.expense_items if "employee" in it.name.lower())
+
+
 def test_tax_and_minority_reconcile_to_reported_net_profit(fin_tata):
     L = fin_tata.lines
     for p, t, m, npf in zip(L["pbt"], L["tax"], L["minority_other"], L["net_profit"]):

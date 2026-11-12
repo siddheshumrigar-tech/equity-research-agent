@@ -10,7 +10,8 @@ definitions:
   for peers; the same definition is shown for the subject company)
 * EV/EBITDA and margins on trailing-twelve-month figures when Screener shows a TTM
   column, else the latest fiscal year
-* P/E, ROE, ROCE, dividend yield from Screener's headline ratios; P/B = price / book value
+* P/E and dividend yield from Screener's headline ratios; P/B = price / book value
+* ROE and ROCE for the latest fiscal year on the HISTORY_METRICS definitions (the same as the company's own ratios)
 
 The parsed snapshot is cached as ``<cache>/<SYMBOL>/peers/peers.json``.
 """
@@ -218,8 +219,6 @@ def snapshot_from_page(parsed: dict, symbol: str, consolidated: bool, cash: Opti
     p.pe = parse_number(top.get("stock p/e"))
     bv = parse_number(top.get("book value"))
     p.pb = p.price / bv if p.price and bv and bv > 0 else None
-    p.roe = parse_number(top.get("roe"))
-    p.roce = parse_number(top.get("roce"))
     p.div_yield = parse_number(top.get("dividend yield"))
     pl = parsed["tables"].get("profit-loss")
     bs = parsed["tables"].get("balance-sheet")
@@ -250,7 +249,18 @@ def snapshot_from_page(parsed: dict, symbol: str, consolidated: bool, cash: Opti
         if e_now and e_now > 0:
             p.ev_ebitda = p.ev / e_now
     p.history, p.year_end = history_from_tables(pl, bs)
+    _returns_from_history(p)
     return p
+
+
+def _returns_from_history(p: Peer) -> None:
+    """ROE and ROCE (percent) for the latest fiscal year of the history, on the same definitions for every company.
+
+    Screener's headline ROE / ROCE use its own method and period, so they are not shown next to the model's ratios."""
+    for key in ("roe", "roce"):
+        vals = p.history.get(key, {}) if p.history else {}
+        latest = list(vals.values())[-1] if vals else None  # history is in fiscal-year order
+        setattr(p, key, latest * 100 if latest is not None else None)
 
 
 def subject_snapshot(fin) -> Peer:
@@ -261,7 +271,7 @@ def subject_snapshot(fin) -> Peer:
     e = t.get("ebitda") or L["ebitda"][-1]
     n = t.get("net_profit") or L["net_profit"][-1]
     p = Peer(symbol=fin.symbol, name=fin.name, consolidated=fin.consolidated, price=fin.price, market_cap=fin.market_cap,
-             pe=fin.pe, roe=fin.roe, roce=fin.roce, div_yield=fin.dividend_yield, sales=s,
+             pe=fin.pe, div_yield=fin.dividend_yield, sales=s,
              basis="TTM" if t.get("sales") else fin.year_labels[-1])
     p.pb = fin.price / fin.book_value if fin.book_value else None
     p.ev = fin.market_cap + L["borrowings"][-1] - L["cash"][-1] - L["investments"][-1]
@@ -272,6 +282,7 @@ def subject_snapshot(fin) -> Peer:
         p.sales_growth_3y = _cagr(L["sales"][-4], L["sales"][-1], 3)
     p.history = subject_history(fin)
     p.year_end = fin.period_labels[-1][:3].title()
+    _returns_from_history(p)
     return p
 
 
@@ -348,6 +359,8 @@ def get_peers(client: ScreenerClient, raw, cfg: dict, symbols: Optional[List[str
                 # snapshot cached before multi-year history existed: rebuild it from the peers' pages
                 if backfill_history(ps, client) and not client.offline:
                     path.write_text(json.dumps(ps.to_dict(), indent=1, ensure_ascii=False), encoding="utf-8")
+            for p in ps.peers:  # caches written before this rule hold Screener's headline ROE / ROCE
+                _returns_from_history(p)
             return ps
     if client.offline:
         return None

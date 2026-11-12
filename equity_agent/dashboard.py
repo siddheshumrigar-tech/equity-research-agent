@@ -167,7 +167,7 @@ def build_calc(wb, ctx: Ctx) -> CalcLayout:
     ws.cell(lay.trade - 1, 1, "Trade cycle (days)").font = Font(bold=True)
     for k, (label, key) in enumerate((("DSO", "dso"), ("DIO", "dio"), ("DPO", "dpo"), ("Cash cycle", "ccc"))):
         ws.cell(lay.trade + k, 1, label)
-        ws.cell(lay.trade + k, 2, f"=ROUND({_lookup(ctx, S_WC, key, cur)},0)")
+        ws.cell(lay.trade + k, 2, f"=IFERROR(ROUND({_lookup(ctx, S_WC, key, cur)},0),0)")  # n/a days plot as 0
     ws.cell(lay.liq - 1, 1, "Liquidity ratios (approx.)").font = Font(bold=True)
     for k, (label, key) in enumerate((("Current ratio", "current_ratio"), ("Quick ratio", "quick_ratio"),
                                       ("Cash ratio", "cash_ratio"))):
@@ -339,7 +339,8 @@ def add_charts(ws, calc, lay: CalcLayout, ctx: Ctx):
     ch.series.append(s)
     _base_style(ch, "Where Revenue Goes", ctx)
     ch.legend = Legend()
-    ch.legend.position = "b"
+    ch.legend.position = "r"
+    ch.legend.overlay = False  # reserve space, so legend entries do not sit on the pie or on each other
     ch.legend.txPr = _rich(750)
     _place(ws, ch, "pie")
 
@@ -402,7 +403,8 @@ def add_charts(ws, calc, lay: CalcLayout, ctx: Ctx):
         ch.series.append(s)
     _base_style(ch, "Free Cash Flow (₹ Cr)", ctx)
     ch.legend = Legend()
-    ch.legend.position = "b"
+    ch.legend.position = "t"
+    ch.legend.overlay = False  # reserve space, so the legend does not cover the year labels
     ch.legend.txPr = _rich(750)
     _axes(ch, '#,##0')
     ch.display_blanks = "gap"

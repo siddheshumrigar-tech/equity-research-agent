@@ -27,7 +27,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 from .brand import Palette
 from .drivers import DRIVER_ORDER, GLIDE_KEYS, YEAR_DRIVERS, Drivers
-from .financials import CompanyFinancials
+from .financials import CompanyFinancials, cost_of_revenue_label, opex_label
 from .market_data import MarketData
 from .model_engine import Forecast
 from .valuation import G_STEPS, WACC_STEPS, Valuation
@@ -221,14 +221,13 @@ IS_KEYS = ["sales", "growth", "cogs", "gross_profit", "gross_margin", "opex", "e
 PPE_KEYS = ["opening_net", "capex", "cwip_transfer", "depreciation", "other_movements", "closing_net", None,
             "gross_block", "acc_dep", "cwip", None, "capex_pct", "dep_rate_hist"]
 WC_KEYS = ["receivables", "inventory", "trade_payables", "other_ca", "other_liab", "nwc", "delta_nwc", None,
-           "loans_advances", None, "dso", "dio", "dpo", "ccc", None, ("h_rep",), "rep_debtor_days",
-           "rep_inventory_days", "rep_days_payable", "rep_ccc"]
+           "loans_advances", None, "dso", "dio", "dpo", "ccc"]
 CF_KEYS = ["net_profit", "depreciation", "wc_other", "cfo", None, "capex", "other_investing", "cfi", None,
            "dividends", "other_financing", "cff", None, "net_cash_flow", "opening_cash", "closing_cash", None, "fcf"]
 BS_KEYS = [("h_le",), "equity_capital", "reserves", "total_equity", "minority_interest", "lt_borrowings",
            "st_borrowings", "lease_liabilities", "other_borrowings", "borrowings", "trade_payables", "other_liab",
            "total_liabilities", None, ("h_a",), "fixed_assets", "cwip", "investments", "receivables", "inventory", "cash",
-           "other_ca", "loans_advances", "total_assets", None, "balance_check", None, ("h_r",), "roa", "roe",
+           "other_ca", "loans_advances", "total_assets", None, "balance_check", None, ("h_r",), "roa", "roe", "roce",
            "debt_equity", "invested_capital", "current_assets", "current_liabilities", "current_ratio", "quick_ratio",
            "cash_ratio"]
 
@@ -411,12 +410,12 @@ def write_income_statement(wb, ctx: Ctx):
     w("sales", "Revenue (Sales)", L["sales"], lambda i: f"={prev('sales', i)}*(1+{dy('sales_growth', i)})", bold=True)
     w("growth", "  Revenue growth %", lambda i: None if i == 0 else f"=IFERROR({c(i)}{R['sales']}/{prev('sales', i)}-1,0)",
       lambda i: f"=IFERROR({c(i)}{R['sales']}/{prev('sales', i)}-1,0)", fmt=F_PCT)
-    w("cogs", "Cost of goods sold (material + manufacturing)", L["cogs"], lambda i: f"={c(i)}{R['sales']}*{dy('cogs_pct', i)}")
+    w("cogs", cost_of_revenue_label(fin), L["cogs"], lambda i: f"={c(i)}{R['sales']}*{dy('cogs_pct', i)}")
     w("gross_profit", "Gross profit", lambda i: f"={c(i)}{R['sales']}-{c(i)}{R['cogs']}",
       lambda i: f"={c(i)}{R['sales']}-{c(i)}{R['cogs']}", bold=True, top_border=True)
     pct = lambda key: (lambda i: f"=IFERROR({c(i)}{R[key]}/{c(i)}{R['sales']},0)")
     w("gross_margin", "  Gross margin %", pct("gross_profit"), pct("gross_profit"), fmt=F_PCT)
-    w("opex", "Operating expenses (employee + other)", L["opex"], lambda i: f"={c(i)}{R['gross_profit']}-{c(i)}{R['ebitda']}")
+    w("opex", opex_label(fin), L["opex"], lambda i: f"={c(i)}{R['gross_profit']}-{c(i)}{R['ebitda']}")
     w("ebitda", "EBITDA (Operating profit)", L["ebitda"], lambda i: f"={c(i)}{R['sales']}*{dy('ebitda_margin', i)}",
       bold=True, top_border=True)
     w("ebitda_margin", "  EBITDA margin %", pct("ebitda"), pct("ebitda"), fmt=F_PCT)
@@ -545,9 +544,10 @@ def write_working_capital(wb, ctx: Ctx):
     ws = wb.create_sheet(S_WC)
     fin, L, n = ctx.fin, ctx.fin.lines, ctx.n_act
     _title(ws, f"{fin.name} - Working Capital",
-           "Days computed from reported balances: DSO = receivables / revenue x 365; DIO and DPO on COGS. Loans & "
-           "advances are non-operating (held flat, outside working capital). Screener's own ratios shown below.",
-           ctx.palette)
+           "Days on year-end balances: DSO = receivables / revenue x 365; DIO = inventories / COGS x 365; DPO = "
+           "trade payables / " + ("COGS" if ctx.drivers.dpo_basis == "cogs" else "total expenses") + " x 365 "
+           "(the same definitions as the PDF report). Loans & advances are non-operating (held flat, outside working "
+           "capital).", ctx.palette)
     _period_header(ws, ctx)
     R = ctx.rows[S_WC]
     c, dy = ctx.col, ctx.dy
@@ -574,22 +574,15 @@ def write_working_capital(wb, ctx: Ctx):
       lambda i: f"={c(i)}{R['nwc']}-{c(i - 1)}{R['nwc']}")
     w("loans_advances", "Loans & advances (non-operating, held flat)", L["loans_advances"],
       lambda i: f"={c(i - 1)}{R['loans_advances']}")
-    dso = lambda i: f"=IFERROR({c(i)}{R['receivables']}/{sales(i)}*365,0)"
-    dio = lambda i: f"=IFERROR({c(i)}{R['inventory']}/{cogs(i)}*365,0)"
-    dpo = lambda i: f"=IFERROR({c(i)}{R['trade_payables']}/{pay_base(i)}*365,0)"
-    ccc = lambda i: f"={c(i)}{R['dso']}+{c(i)}{R['dio']}-{c(i)}{R['dpo']}"
+    # n/a when the base is not positive (equity_agent.ratios.days returns None there)
+    day = lambda bal, base: (lambda i: f'=IF({base(i)}>0,{c(i)}{R[bal]}/{base(i)}*365,"n/a")')
+    ccc = lambda i: (f'=IF(OR(ISTEXT({c(i)}{R["dso"]}),ISTEXT({c(i)}{R["dpo"]})),"n/a",'
+                     f'{c(i)}{R["dso"]}+N({c(i)}{R["dio"]})-{c(i)}{R["dpo"]})')
+    dso, dio, dpo = day("receivables", sales), day("inventory", cogs), day("trade_payables", pay_base)
     w("dso", "Receivable days (DSO)", dso, dso, fmt=F_DAYS)
     w("dio", "Inventory days (DIO)", dio, dio, fmt=F_DAYS)
     w("dpo", "Payable days (DPO)" + ("" if ctx.drivers.dpo_basis == "cogs" else " on total expenses"), dpo, dpo, fmt=F_DAYS)
     w("ccc", "Cash conversion cycle (days)", ccc, ccc, fmt=F_DAYS, bold=True)
-    _section(ws, R["h_rep"], "Screener.in reported ratios (cross-check)", ctx.palette, ctx.n_all)
-    rep = fin.reported_ratios
-    for key, lab in (("rep_debtor_days", "Debtor Days"), ("rep_inventory_days", "Inventory Days"),
-                     ("rep_days_payable", "Days Payable"), ("rep_ccc", "Cash Conversion Cycle")):
-        if lab in rep:
-            w(key, f"{lab} (Screener)", list(rep[lab]), None, fmt=F_DAYS)
-        else:
-            ws.cell(R[key], 1, f"{lab} (not reported)")
 
 
 # --------------------------------------------------------------------------- #
@@ -689,8 +682,21 @@ def write_balance_sheet(wb, ctx: Ctx):
     chk = lambda i: f"=ROUND({c(i)}{R['total_assets']}-{c(i)}{R['total_liabilities']},2)"
     w("balance_check", "Balance check (assets - liabilities) = 0", chk, chk, fmt='0.00;-0.00;0.00', bold=True)
     _section(ws, R["h_r"], "Returns & liquidity", ctx.palette, ctx.n_all)
-    roa = lambda i: f"=IFERROR({q(S_IS)}!{c(i)}{is_r['net_profit']}/{c(i)}{R['total_assets']},0)"
-    roe = lambda i: f"=IFERROR({q(S_IS)}!{c(i)}{is_r['net_profit']}/{c(i)}{R['total_equity']},0)"
+    # Returns on average balances (prior and current year-end), as equity_agent.ratios: n/a in the first year.
+    def on_avg(num, bal):
+        def f(i):
+            if i == 0:
+                return "n/a"
+            avg = f"({bal(i - 1)}+{bal(i)})/2"
+            return f'=IF({avg}>0,{num(i)}/({avg}),"n/a")'
+        return f
+
+    np_ = lambda i: f"{q(S_IS)}!{c(i)}{is_r['net_profit']}"
+    ebit_ = lambda i: f"({q(S_IS)}!{c(i)}{is_r['pbt']}+{q(S_IS)}!{c(i)}{is_r['interest']})"
+    eq_ = lambda i: f"{c(i)}{R['total_equity']}"
+    ta_ = lambda i: f"{c(i)}{R['total_assets']}"
+    cap_ = lambda i: f"({c(i)}{R['total_equity']}+{c(i)}{R['borrowings']})"
+    roa, roe, roce = on_avg(np_, ta_), on_avg(np_, eq_), on_avg(ebit_, cap_)
     de = lambda i: f"=IFERROR({c(i)}{R['borrowings']}/{c(i)}{R['total_equity']},0)"
     ic = lambda i: f"={c(i)}{R['fixed_assets']}+{c(i)}{R['cwip']}+{q(S_WC)}!{c(i)}{wc_r['nwc']}"
     ca = lambda i: (f"={c(i)}{R['receivables']}+{c(i)}{R['inventory']}+{c(i)}{R['cash']}+{c(i)}{R['other_ca']}"
@@ -699,8 +705,9 @@ def write_balance_sheet(wb, ctx: Ctx):
     cr = lambda i: f"=IFERROR({c(i)}{R['current_assets']}/{c(i)}{R['current_liabilities']},0)"
     qr = lambda i: f"=IFERROR(({c(i)}{R['current_assets']}-{c(i)}{R['inventory']})/{c(i)}{R['current_liabilities']},0)"
     cashr = lambda i: f"=IFERROR({c(i)}{R['cash']}/{c(i)}{R['current_liabilities']},0)"
-    w("roa", "Return on assets (net profit / closing total assets)", roa, roa, fmt=F_PCT)
-    w("roe", "Return on equity (net profit / closing equity)", roe, roe, fmt=F_PCT)
+    w("roa", "Return on assets (net profit / average total assets)", roa, roa, fmt=F_PCT)
+    w("roe", "Return on equity (net profit / average equity)", roe, roe, fmt=F_PCT)
+    w("roce", "ROCE, pre-tax ((PBT + interest) / average (equity + borrowings))", roce, roce, fmt=F_PCT)
     w("debt_equity", "Debt / equity", de, de, fmt=F_X)
     w("invested_capital", "Operating invested capital (net block + CWIP + operating NWC)", ic, ic)
     w("current_assets", "Current assets (approx.: receivables + inventory + cash + other assets)", ca, ca)
@@ -979,8 +986,8 @@ def _write_sensitivity(ws, ctx: Ctx, nf: int, nfade: int):
 # --------------------------------------------------------------------------- #
 PEER_COLS = [("name", "Company", None), ("symbol", "Symbol", None), ("price", "Price (₹)", F_EPS),
              ("market_cap", "Market cap (₹ Cr)", F_NUM), ("pe", "P/E (x)", F_X1), ("pb", "P/B (x)", F_X1),
-             ("ev", "EV (₹ Cr)", F_NUM), ("ev_ebitda", "EV/EBITDA (x)", F_X1), ("roe", "ROE %", '0.0'),
-             ("roce", "ROCE %", '0.0'), ("sales_growth_3y", "Sales CAGR 3y", F_PCT),
+             ("ev", "EV (₹ Cr)", F_NUM), ("ev_ebitda", "EV/EBITDA (x)", F_X1), ("roe", "ROE % (latest FY)", '0.0'),
+             ("roce", "ROCE % (latest FY)", '0.0'), ("sales_growth_3y", "Sales CAGR 3y", F_PCT),
              ("ebitda_margin", "EBITDA margin", F_PCT), ("net_margin", "Net margin", F_PCT),
              ("div_yield", "Div. yield %", '0.00'), ("basis", "Basis", None)]
 

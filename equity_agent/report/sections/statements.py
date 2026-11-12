@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Callable, List, Optional, Sequence
 
+from ...financials import cost_of_revenue_label
+from ...ratios import annual
 from ..common import R
 from ..layout import section_title
 from ..metrics import key_metrics
@@ -53,18 +55,23 @@ def income_statement(r: R) -> list:
     k0 = max(0, f.n - N_ACT)
     eps = m["eps"][k0:]
     dps = m["dps"][k0:]
-    g = lambda s: [None] + [b / a - 1 if a and a > 0 and b is not None else None for a, b in zip(s, s[1:])]
+    # growth on the full history, so the first column shown has its growth too (as in the Excel model)
+    full = lambda k: list(L[k]) + list(F[k])
+    g = lambda k: ([None] + [b / a - 1 if a and a > 0 and b is not None else None
+                             for a, b in zip(full(k), full(k)[1:])])[k0:]
     pg = lambda x: fmt_pct(x, 1, True)
-    spec = [("Revenue", sales, fmt_num, True), ("  growth", g(sales), pg, False), ("Cost of goods sold", c("cogs"), fmt_num, False),
-            ("Gross profit", c("gross_profit"), fmt_num, False), ("  gross margin", _div(c("gross_profit"), sales), fmt_pct, False),
+    ratios = annual(r.res)
+    spec = [("Revenue", sales, fmt_num, True), ("  growth", g("sales"), pg, False),
+            (cost_of_revenue_label(f, short=True), c("cogs"), fmt_num, False),
+            ("Gross profit", c("gross_profit"), fmt_num, False), ("  gross margin", ratios["gross_margin"][k0:], fmt_pct, False),
             ("Operating expenses", c("opex"), fmt_num, False), ("EBITDA", ebitda, fmt_num, True),
-            ("  EBITDA margin", _div(ebitda, sales), fmt_pct, False), ("  growth", g(ebitda), pg, False),
+            ("  EBITDA margin", _div(ebitda, sales), fmt_pct, False), ("  growth", g("ebitda"), pg, False),
             ("Other income", c("other_income"), fmt_num, False), ("Depreciation", c("depreciation"), fmt_num, False),
             ("EBIT (incl. other income)", ebit, fmt_num, False), ("Interest", c("interest"), fmt_num, False),
             ("Profit before tax", c("pbt"), fmt_num, True), ("Tax", c("tax"), fmt_num, False),
             ("  effective tax rate", _div(c("tax"), c("pbt")), fmt_pct, False),
             ("Minority, associates & other", c("minority_other"), fmt_num, False), ("Net profit", npf, fmt_num, True),
-            ("  net margin", _div(npf, sales), fmt_pct, False), ("  growth", g(npf), pg, False),
+            ("  net margin", _div(npf, sales), fmt_pct, False), ("  growth", g("net_profit"), pg, False),
             (f"EPS ({RS})", eps, lambda x: fmt_num(x, 2), False), (f"DPS ({RS})", dps, lambda x: fmt_num(x, 2), False)]
     return [r.ex.make(f"Income statement ({RS} Cr)", _table(r, spec),
                       "Screener.in (reported, " + ("consolidated" if f.consolidated else "standalone") + "), model "
@@ -133,15 +140,7 @@ def ratios(r: R) -> list:
     k0 = max(0, f.n - N_ACT)
     cut = lambda s: list(s[k0:])
     c = lambda k, fk=None: _cat(r, L[k], F[fk or k])
-    sales, cogs = c("sales"), c("cogs")
-    if res.drivers.dpo_basis == "cogs":
-        base = cogs
-    else:
-        base = _cat(r, L["expenses"], [a + b for a, b in zip(F["cogs"], F["opex"])])
-    dso = [x / s * 365 if s else None for x, s in zip(c("receivables"), sales)]
-    dio = [x / g * 365 if g and g > 0 else None for x, g in zip(c("inventory"), cogs)]
-    dpo = [x / b * 365 if b and b > 0 else None for x, b in zip(c("trade_payables"), base)]
-    ccc = [None if a is None or p is None else a + (i or 0) - p for a, i, p in zip(dso, dio, dpo)]
+    rt = {k: cut(v) for k, v in annual(res).items()}
     ebit = _cat(r, [e + o - d for e, o, d in zip(L["ebitda"], L["other_income"], L["depreciation"])], F["ebit"])
     cover = [e / i if i and i > 0 else None for e, i in zip(ebit, c("interest"))]
     bvps = [q / f.shares_cr for q in c("total_equity")]
@@ -152,13 +151,13 @@ def ratios(r: R) -> list:
     spec = [("Growth", None, None, False),
             ("Revenue", cut(m["sales_growth"]), pg, False), ("EPS", cut(m["eps_growth"]), pg, False),
             ("Margins", None, None, False),
-            ("Gross margin", _div(c("gross_profit"), sales), pct, False), ("EBITDA margin", cut(m["ebitda_margin"]), pct, False),
+            ("Gross margin", rt["gross_margin"], pct, False), ("EBITDA margin", cut(m["ebitda_margin"]), pct, False),
             ("Net margin", cut(m["net_margin"]), pct, False),
             ("Returns (average balances)", None, None, False),
-            ("ROE", cut(m["roe"]), pct, False), ("ROCE (pre-tax)", cut(m["roce"]), pct, False),
+            ("ROE", rt["roe"], pct, False), ("ROCE (pre-tax)", rt["roce"], pct, False),
             ("Working capital (days)", None, None, False),
-            ("Receivable days", dso, days, False), ("Inventory days", dio, days, False), ("Payable days", dpo, days, False),
-            ("Cash conversion cycle", ccc, days, False),
+            ("Receivable days", rt["dso"], days, False), ("Inventory days", rt["dio"], days, False),
+            ("Payable days", rt["dpo"], days, False), ("Cash conversion cycle", rt["ccc"], days, False),
             ("Balance sheet", None, None, False),
             ("Net debt / equity (x)", cut(m["net_debt_equity"]), two, False), ("Interest cover (x)", cover, xf, False),
             (f"Book value per share ({RS})", bvps, lambda x: fmt_num(x, 1), False),
@@ -166,8 +165,9 @@ def ratios(r: R) -> list:
             ("P/E", cut(m["pe"]), xf, False), ("EV/EBITDA", cut(m["ev_ebitda"]), xf, False), ("P/B", cut(m["pb"]), xf, False),
             ("Dividend yield", cut(m["div_yield"]), pct, False)]
     return [r.ex.make("Key ratios", _table(r, spec),
-                      "Screener.in, model estimates. Payable days on " +
-                      ("COGS" if res.drivers.dpo_basis == "cogs" else "total expenses") +
+                      "Screener.in, model estimates. Inventory days on " + cost_of_revenue_label(f, short=True).lower() +
+                      "; payable days on " +
+                      (cost_of_revenue_label(f, short=True).lower() if res.drivers.dpo_basis == "cogs" else "total expenses") +
                       "; interest cover = EBIT incl. other income / interest; multiples at today's price and EV.")]
 
 

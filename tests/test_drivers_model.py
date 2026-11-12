@@ -20,11 +20,13 @@ def test_drivers_are_history_averages(fin_tata):
 
 
 def test_payable_days_basis(fin_tata, fin_asian):
-    # Tata Technologies: material cost is ~21% of expenses -> payables measured on total expenses
+    # Tata Technologies: material cost is ~21% of expenses -> service cost structure, so COGS includes employee
+    # cost and payables are measured on that COGS
     d = build_drivers(fin_tata)
     L = fin_tata.lines
-    assert d.dpo_basis == "expenses"
-    assert d.value("dpo") == pytest.approx(statistics.mean(L["trade_payables"][k] / L["expenses"][k] * 365 for k in (-3, -2, -1)))
+    assert fin_tata.cost_basis == "services"
+    assert d.dpo_basis == "cogs"
+    assert d.value("dpo") == pytest.approx(statistics.mean(L["trade_payables"][k] / L["cogs"][k] * 365 for k in (-3, -2, -1)))
     assert d.value("dpo") < 120
     # Asian Paints: manufacturer -> COGS basis (Screener reports ~79 days)
     da = build_drivers(fin_asian)

@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 from .config import with_defaults
-from .financials import CompanyFinancials
+from .financials import SERVICE_COGS_SHARE, CompanyFinancials
 
 SCENARIOS = ("base", "bull", "bear")
 GROWTH_OFFSET = 0.03
@@ -93,6 +93,15 @@ def _avg(vals: List[float]) -> Optional[float]:
     return sum(vals) / len(vals) if vals else None
 
 
+def payables_basis(fin: CompanyFinancials) -> str:
+    """"cogs" when COGS averages at least SERVICE_COGS_SHARE of total expenses over the driver window, else "expenses"."""
+    L = fin.lines
+    n = fin.n
+    idx = range(n - min(WINDOW, n - 1), n)
+    share = _avg([L["cogs"][k] / L["expenses"][k] for k in idx if L["expenses"][k] > 0]) or 0.0
+    return "cogs" if share >= SERVICE_COGS_SHARE else "expenses"
+
+
 def base_year_days(fin: CompanyFinancials, dpo_basis: str) -> Dict[str, float]:
     """Last reported DSO / DIO / DPO, computed exactly like the Working Capital sheet."""
     L = fin.lines
@@ -133,8 +142,10 @@ def build_drivers(fin: CompanyFinancials, cfg: Optional[dict] = None) -> Drivers
     cagr = (s[-1] / start) ** (1.0 / w) - 1 if start > 0 and s[-1] > 0 else None
     add("sales_growth", "Revenue growth (YoY)", "pct", cagr, -0.10, 0.30,
         f"{w}-yr revenue CAGR FY{fin.years[n-1-w] % 100:02d}-FY{fin.years[-1] % 100:02d}", g_off, default=0.0)
-    add("cogs_pct", "COGS % of revenue", "pct", _avg([L["cogs"][k] / s[k] for k in idx if s[k]]), 0.0, 0.95,
-        f"{w}-yr average (material + manufacturing costs)")
+    cost_items = ("material + manufacturing + employee cost; service cost structure" if fin.cost_basis == "services"
+                  else "material + manufacturing costs")
+    add("cogs_pct", "COGS (cost of revenue) % of revenue", "pct", _avg([L["cogs"][k] / s[k] for k in idx if s[k]]),
+        0.0, 0.95, f"{w}-yr average ({cost_items})")
     add("ebitda_margin", "EBITDA margin", "pct", _avg([L["ebitda"][k] / s[k] for k in idx if s[k]]), -0.20, 0.60,
         f"{w}-yr average operating profit margin", m_off)
     # keep OPEX >= 0 in every scenario
@@ -180,14 +191,14 @@ def build_drivers(fin: CompanyFinancials, cfg: Optional[dict] = None) -> Drivers
     c = L["cogs"]
     add("dio", "Inventory days (DIO)", "days", _avg([L["inventory"][k] / c[k] * 365 for k in idx if c[k] > 0]), 0, 365,
         f"{w}-yr average inventory / COGS x 365", default=0.0)
-    # Service companies have little material cost, so payables / COGS explodes (e.g. TCS > 100,000 days).
-    # When COGS is under 30% of total expenses, payable days are measured on total expenses instead.
-    cogs_share = _avg([c[k] / L["expenses"][k] for k in idx if L["expenses"][k] > 0]) or 0.0
-    dpo_basis = "cogs" if cogs_share >= 0.30 else "expenses"
+    # When COGS is still a small part of costs (no employee line to add for a service business), payables / COGS
+    # explodes, so payable days are measured on total expenses instead.
+    dpo_basis = payables_basis(fin)
     base_cost = c if dpo_basis == "cogs" else L["expenses"]
     add("dpo", "Payable days (DPO)" + ("" if dpo_basis == "cogs" else " on total expenses"), "days",
         _avg([L["trade_payables"][k] / base_cost[k] * 365 for k in idx if base_cost[k] > 0]), 0, 365,
-        f"{w}-yr average trade payables / {'COGS' if dpo_basis == 'cogs' else 'total expenses (COGS < 30% of costs)'} x 365",
+        f"{w}-yr average trade payables / "
+        f"{'COGS' if dpo_basis == 'cogs' else f'total expenses (COGS < {SERVICE_COGS_SHARE:.0%} of costs)'} x 365",
         default=0.0)
     add("dividend_payout", "Dividend payout", "pct", _avg([L["dividend_payout"][k] for k in idx]), 0.0, 1.0,
         f"{w}-yr average reported payout")

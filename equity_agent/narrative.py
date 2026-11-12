@@ -23,6 +23,7 @@ from typing import Dict, List, Optional
 
 from .analyst_inputs import SOURCE_TYPES
 from .errors import InputValidationError
+from .ratios import latest_actual
 
 TOKEN_RE = re.compile(r"\{\{\s*([a-z0-9_.]+)\s*\}\}")
 CITE_RE = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")
@@ -109,7 +110,8 @@ def build_tokens(res) -> Dict[str, str]:
         "net_profit_latest": _cr(L["net_profit"][-1]),
         "ebitda_margin_latest": _pct(L["ebitda"][-1] / L["sales"][-1] if L["sales"][-1] else None),
         "net_margin_latest": _pct(L["net_profit"][-1] / L["sales"][-1] if L["sales"][-1] else None),
-        "roe": f"{f.roe:.1f}%" if f.roe is not None else "n/a", "roce": f"{f.roce:.1f}%" if f.roce is not None else "n/a",
+        # latest reported year on the model's definitions (average balances), as in the tables and the Excel model
+        "roe": _pct(latest_actual(res, "roe")), "roce": _pct(latest_actual(res, "roce")),
         "growth_forecast": _pct(d.value("sales_growth")), "margin_forecast": _pct(d.value("ebitda_margin")),
         "fy1": fc.year_labels[0], "fy2": fc.year_labels[1], "fy_last": fc.year_labels[-1],
         "revenue_fy1": _cr(fc.lines["sales"][0]), "revenue_fy2": _cr(fc.lines["sales"][1]),

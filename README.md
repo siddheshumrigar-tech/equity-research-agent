@@ -131,6 +131,11 @@ Banks and NBFCs use a different statement format and are rejected for now (exit 
 
 ## The Excel model
 
+![TCS Excel dashboard, FY26](docs/assets/screenshots/tcs_excel_dashboard.png)
+
+<sub>Dashboard tab of the TCS model from the 12 November 2026 run, exported from Excel. Every figure is a live formula
+and matches the PDF report.</sub>
+
 | Tab | What it holds |
 |---|---|
 | Cover Page | Summary, data sources, contents, data warnings |
@@ -162,6 +167,14 @@ forecast years change. The workbook recalculates when opened.
   is missing); a sourced sum-of-the-parts replaces the blend. Rating on 12-month expected total return (upside +
   dividend yield): BUY >= +15%, ADD >= +5%, REDUCE >= -5%, else SELL. Also: bull / base / bear through forecast, DCF
   and multiples, a probability-weighted value, a reverse DCF, an exit-multiple cross-check and two sensitivity grids.
+* **One definition per ratio** (`equity_agent/ratios.py`), used by the PDF, the Excel formulas, the peer tables and
+  the narrative tokens; `tests/test_parity.py` recalculates the workbook and checks every year.
+  ROE = net profit / average equity, ROA = net profit / average total assets, ROCE = (PBT + interest) / average
+  (equity + borrowings); DSO, DIO and DPO on year-end balances. Screener's own headline ratios are not shown next to
+  them, because they use a different method.
+* **Cost of revenue** follows each company's cost mix. Material and manufacturing items are COGS. When they average
+  under 30% of total expenses over the last three years (IT, engineering and other service businesses), employee
+  cost is counted in COGS as well, so gross margin and inventory days stay meaningful.
 * **Credibility checks** flag a terminal value above 75% of EV, DCF and multiples more than 2x apart, a target more
   than 40% from the price, negative FCFF, an unreachable reverse DCF, clamped drivers, stale market inputs and
   year-to-date growth far from the forecast. The host agent must answer every high-severity flag in the narrative.

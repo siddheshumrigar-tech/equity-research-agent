@@ -130,6 +130,7 @@ def peer_section(r: R, num: int) -> list:
     out.append(r.ex.make("Peer comparison on one set of definitions", t,
                          f"{ps.source}, fetched {ps.fetched_at}. Margins and EV/EBITDA on "
                          f"{' / '.join(basis) or 'latest'} figures; EV = market cap + borrowings - cash - investments. "
+                         "ROE and ROCE for the latest fiscal year, on average balances. "
                          "P/E above 200x and EV/EBITDA above 100x are shown as n/a and left out of medians."))
     out += ratios_vs_peers(r, subj, peers)
     out += peer_history_section(r, subj, peers)

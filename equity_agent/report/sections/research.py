@@ -16,6 +16,7 @@ from ..layout import section_title
 from ..metrics import key_metrics
 from ..styles import CONTENT_W, HALF_W, MUTED, RS, c, data_table, fmt_pct, tint
 from ...analyst_inputs import source_text
+from ...ratios import annual
 from ...narrative import PESTLE, PORTER_FORCES, PORTER_LABELS, SWOT
 
 RATING_COL = {"low": "15803D", "moderate": "B45309", "high": "B91C1C"}
@@ -78,10 +79,8 @@ def _thesis_chart(r: R, key: str, w: float, h: float, name: str):
                          hlines=[(v.wacc, f"WACC {v.wacc:.1%}")]), "Returns vs the cost of capital",
                 "Screener.in, model")
     if key == "wc_days":
-        L = f.lines
-        dso = [x / s * 365 if s else None for x, s in zip(L["receivables"], L["sales"])]
-        dpo = [x / b * 365 if b and b > 0 else None for x, b in zip(L["trade_payables"], L["cogs"])]
-        dio = [x / b * 365 if b and b > 0 else None for x, b in zip(L["inventory"], L["cogs"])]
+        rt = annual(res)
+        dso, dio, dpo = (rt[k][:f.n] for k in ("dso", "dio", "dpo"))
         return (ch.lines(name, f.year_labels, [("Receivable days", dso), ("Inventory days", dio), ("Payable days", dpo)],
                          w, h, pct=False, legend_cols=3), "Working-capital days (reported)", "Screener.in")
     if key == "peers_pe" and res.peers is not None:
